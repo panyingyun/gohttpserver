@@ -34,7 +34,7 @@
 ```bash
 docker stop gohttpserver
 docker rm gohttpserver
-docker run -itd --restart=always  -v /opt/gohttpserver:/data -p 8080:8080 --name  gohttpserver harbor.michaelapp.com/gohttpserver/gohttpserver:v1.1
+docker run -itd --restart=always  -v /opt/gohttpserver:/data -p 8080:8080 --name  gohttpserver harbor.michaelapp.com/gohttpserver/gohttpserver:v1.2
 ```
 
 ### 本地使用Docker构建安装 [推荐]
