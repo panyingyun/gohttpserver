@@ -8,6 +8,7 @@ WORKDIR /build
 # Copy package files
 COPY web/package.json web/package-lock.json* ./
 COPY web/tsconfig.json web/tsconfig.node.json web/vite.config.ts ./
+COPY web/tailwind.config.js web/postcss.config.js ./
 
 # Install dependencies
 RUN npm ci
