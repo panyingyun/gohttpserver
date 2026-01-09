@@ -3,26 +3,13 @@ import { listFiles } from './services/api';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { FileList } from './components/FileList';
-import { TransferCenter } from './components/TransferCenter';
 import type { FileInfo, SearchResult } from './types';
-
-interface Transfer {
-  id: string;
-  name: string;
-  type: 'download' | 'upload';
-  status: 'active' | 'paused' | 'completed' | 'error';
-  progress: number;
-  speed?: string;
-  size?: string;
-  timeLeft?: string;
-}
 
 const App: React.FC = () => {
   const [currentPath, setCurrentPath] = useState('/');
   const [files, setFiles] = useState<FileInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [transfers, setTransfers] = useState<Transfer[]>([]);
 
   const loadFiles = useCallback(async (path: string = currentPath) => {
     setIsLoading(true);
@@ -67,42 +54,12 @@ const App: React.FC = () => {
 
   const handleUploadSuccess = useCallback(() => {
     loadFiles();
-    // Add upload transfer (simplified)
-    const newTransfer: Transfer = {
-      id: Date.now().toString(),
-      name: 'Uploaded files',
-      type: 'upload',
-      status: 'completed',
-      progress: 100,
-      size: '0 KB',
-    };
-    setTransfers((prev) => [...prev, newTransfer]);
   }, [loadFiles]);
 
   const handleError = useCallback((errorMessage: string) => {
     setError(errorMessage);
     setTimeout(() => setError(null), 5000);
   }, []);
-
-  const handlePause = (id: string) => {
-    setTransfers((prev) =>
-      prev.map((t) =>
-        t.id === id ? { ...t, status: 'paused' as const } : t
-      )
-    );
-  };
-
-  const handleResume = (id: string) => {
-    setTransfers((prev) =>
-      prev.map((t) =>
-        t.id === id ? { ...t, status: 'active' as const } : t
-      )
-    );
-  };
-
-  const handleClearTransfers = () => {
-    setTransfers((prev) => prev.filter((t) => t.status !== 'completed'));
-  };
 
   return (
     <div className="flex h-screen overflow-hidden bg-background-light dark:bg-background-dark font-display text-[#111318] dark:text-white">
@@ -179,13 +136,6 @@ const App: React.FC = () => {
           <span className="material-symbols-outlined text-3xl font-bold">add</span>
         </button>
       </main>
-
-      <TransferCenter
-        transfers={transfers}
-        onPause={handlePause}
-        onResume={handleResume}
-        onClear={handleClearTransfers}
-      />
     </div>
   );
 };
