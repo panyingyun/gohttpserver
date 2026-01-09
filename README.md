@@ -30,7 +30,7 @@
 
 ## 安装
 
-### 一键安装[强烈推荐]
+### 使用编译完成的包一键安装[强烈推荐]
 ```bash
 docker stop gohttpserver
 docker rm gohttpserver
@@ -59,13 +59,12 @@ cd gohttpserver
 
 # 构建后端
 cd backend
-go mod download
-go build -o gohttpserver ./cmd/server
+make build
 
 # 构建前端
 cd ../frontend
-npm install
-npm run build
+make env 
+make build
 
 # 运行（需要将前端构建产物复制到后端可访问的位置）
 cd ../backend
@@ -77,23 +76,17 @@ cd ../backend
 ### 基本用法
 
 ```bash
-# 启动服务器（默认端口 8080，当前目录）
-./gohttpserver
-
-# 指定根目录和端口
-./gohttpserver --root /path/to/files --port 9000
-
 # 启用前端（需要先构建前端）
-./gohttpserver --root ./data --port 8080 --web-dir ./frontend/dist
+./gohttpserver --root ../data --port 8080 --web-dir ../frontend/dist
 
 # 启用 HTTPS
-./gohttpserver --https --cert cert.pem --key key.pem
+./gohttpserver --root ../data --port 8080 --web-dir ../frontend/dist  --https --cert cert.pem --key key.pem
 
 # 启用 HTTP Basic 认证
-./gohttpserver --auth "username:password"
+./gohttpserver  --root ../data --port 8080 --web-dir ../frontend/dist --auth "username:password"
 
 # 启用 WebDAV（默认启用）
-./gohttpserver --webdav
+./gohttpserver  --root ../data --port 8080 --web-dir ../frontend/dist --webdav
 ```
 
 ### 命令行参数
@@ -118,13 +111,13 @@ cd ../backend
 
 ```bash
 # 只允许访问 /public 和 /shared 目录
-./gohttpserver --allow-paths "/public,/shared"
+./gohttpserver --root ../data --port 8080 --web-dir ../frontend/dist --allow-paths "/public,/shared"
 
 # 拒绝访问 /private 目录
-./gohttpserver --deny-paths "/private"
+./gohttpserver --root ../data --port 8080 --web-dir ../frontend/dist --deny-paths "/private"
 
 # 组合使用：允许 /public，拒绝 /public/secret
-./gohttpserver --allow-paths "/public" --deny-paths "/public/secret"
+./gohttpserver --root ../data --port 8080 --web-dir ../frontend/dist --allow-paths "/public" --deny-paths "/public/secret"
 ```
 
 **注意**: 访问控制优先级：`deny` > `allow` > 默认策略（允许）
@@ -256,9 +249,9 @@ npm run dev  # 开发模式，支持热重载
 
 ```bash
 cd backend
-go run ./cmd/server --root ../data --port 8080 --web-dir ../frontend/dist
+go run ./cmd/gohttpserver --root ../data --port 8080 --web-dir ../frontend/dist
 ```
-
+server
 详细开发说明请参考：
 - [backend/README.md](backend/README.md) - 后端开发文档
 - [frontend/README.md](frontend/README.md) - 前端开发文档

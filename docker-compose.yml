@@ -40,12 +40,13 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
+    # Note: wget is not installed by default in alpine, consider using curl or install wget
 
 networks:
   gohttpserver-network:
     driver: bridge
 
-volumes:
-  # Optional: Use named volume instead of bind mount
-  # data:
-  #   driver: local
+# volumes:
+#   # Optional: Use named volume instead of bind mount
+#   data:
+#     driver: local

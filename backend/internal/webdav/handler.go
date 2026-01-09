@@ -75,7 +75,7 @@ func (h *Handler) handleGet(w http.ResponseWriter, r *http.Request, fullPath str
 
 func (h *Handler) handlePut(w http.ResponseWriter, r *http.Request, fullPath string) {
 	dir := filepath.Dir(fullPath)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -118,7 +118,7 @@ func (h *Handler) handleDelete(w http.ResponseWriter, r *http.Request, fullPath 
 }
 
 func (h *Handler) handleMkcol(w http.ResponseWriter, r *http.Request, fullPath string) {
-	if err := os.MkdirAll(fullPath, 0755); err != nil {
+	if err := os.MkdirAll(fullPath, 0o755); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -161,7 +161,7 @@ func (h *Handler) handleCopy(w http.ResponseWriter, r *http.Request, fullPath st
 	}
 
 	dstPath := filepath.Join(h.rootDir, dstURL.Path)
-	
+
 	srcInfo, err := os.Stat(fullPath)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
@@ -239,10 +239,10 @@ func (h *Handler) buildResponse(fullPath string, info os.FileInfo) propfindRespo
 	propstat := propstat{
 		Status: "HTTP/1.1 200 OK",
 		Prop: prop{
-			DisplayName:       info.Name(),
-			ResourceType:      resourceType{Collection: info.IsDir()},
-			GetContentLength:  fmt.Sprintf("%d", info.Size()),
-			GetLastModified:   info.ModTime().Format(time.RFC1123),
+			DisplayName:      info.Name(),
+			ResourceType:     resourceType{Collection: info.IsDir()},
+			GetContentLength: fmt.Sprintf("%d", info.Size()),
+			GetLastModified:  info.ModTime().Format(time.RFC1123),
 		},
 	}
 
@@ -254,12 +254,12 @@ func (h *Handler) buildResponse(fullPath string, info os.FileInfo) propfindRespo
 
 // WebDAV XML structures
 type multistatus struct {
-	XMLName   xml.Name          `xml:"DAV:multistatus"`
+	XMLName   xml.Name           `xml:"DAV:multistatus"`
 	Responses []propfindResponse `xml:"response"`
 }
 
 type propfindResponse struct {
-	Href     string  `xml:"href"`
+	Href     string   `xml:"href"`
 	Propstat propstat `xml:"propstat"`
 }
 
@@ -269,10 +269,10 @@ type propstat struct {
 }
 
 type prop struct {
-	DisplayName       string       `xml:"displayname"`
-	ResourceType      resourceType `xml:"resourcetype"`
-	GetContentLength  string       `xml:"getcontentlength"`
-	GetLastModified   string       `xml:"getlastmodified"`
+	DisplayName      string       `xml:"displayname"`
+	ResourceType     resourceType `xml:"resourcetype"`
+	GetContentLength string       `xml:"getcontentlength"`
+	GetLastModified  string       `xml:"getlastmodified"`
 }
 
 type resourceType struct {
@@ -288,7 +288,7 @@ func copyFile(src, dst string) error {
 	defer sourceFile.Close()
 
 	dstDir := filepath.Dir(dst)
-	if err := os.MkdirAll(dstDir, 0755); err != nil {
+	if err := os.MkdirAll(dstDir, 0o755); err != nil {
 		return err
 	}
 

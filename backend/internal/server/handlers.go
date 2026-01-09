@@ -265,7 +265,7 @@ func (s *Server) handlePostUpload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	targetDir := filepath.Join(s.rootDir, cleanPath)
-	if err := os.MkdirAll(targetDir, 0755); err != nil {
+	if err := os.MkdirAll(targetDir, 0o755); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -346,7 +346,7 @@ func (s *Server) handlePutUpload(w http.ResponseWriter, r *http.Request) {
 
 	// Create parent directory if needed
 	dir := filepath.Dir(fullPath)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

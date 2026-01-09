@@ -7,8 +7,9 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/spf13/cobra"
 	"gohttpserver/internal/server"
+
+	"github.com/spf13/cobra"
 )
 
 var (
@@ -63,16 +64,16 @@ func runServer(cmd *cobra.Command, args []string) error {
 		RootDir:      rootDir,
 		Port:         port,
 		HTTPSPort:    httpsPort,
-		HTTPS:         https,
-		CertFile:      certFile,
-		KeyFile:       keyFile,
-		Auth:          auth,
-		AllowPaths:    parsePaths(allowPaths),
-		DenyPaths:     parsePaths(denyPaths),
-		EnableWebDAV:  enableWebDAV,
-		EnableUpload:  enableUpload,
-		EnableDelete:  enableDelete,
-		WebDir:        webDir,
+		HTTPS:        https,
+		CertFile:     certFile,
+		KeyFile:      keyFile,
+		Auth:         auth,
+		AllowPaths:   parsePaths(allowPaths),
+		DenyPaths:    parsePaths(denyPaths),
+		EnableWebDAV: enableWebDAV,
+		EnableUpload: enableUpload,
+		EnableDelete: enableDelete,
+		WebDir:       webDir,
 	}
 
 	httpServer, err := server.NewHTTPServer(config)

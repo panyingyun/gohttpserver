@@ -43,14 +43,14 @@ RUN go mod download || (sleep 5 && go mod download) || (sleep 10 && go mod downl
 COPY backend/cmd ./cmd
 COPY backend/internal ./internal
 
-# Build the application
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -o gohttpserver ./cmd/server
+# Initialize go module if needed and build the application
+RUN go mod tidy && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o gohttpserver ./cmd/server
 
 # Stage 3: Final image
 FROM alpine:latest
 
-# Install ca-certificates for HTTPS
-RUN apk --no-cache add ca-certificates tzdata
+# Install ca-certificates for HTTPS and wget for healthcheck
+RUN apk --no-cache add ca-certificates tzdata wget
 
 WORKDIR /app
 
