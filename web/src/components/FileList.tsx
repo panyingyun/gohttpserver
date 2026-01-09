@@ -154,27 +154,91 @@ export const FileList: React.FC<FileListProps> = ({
               onClick={(e) => e.stopPropagation()}
             >
               {file.is_dir ? (
-                <>
-                  <a
-                    href={getZipUrl(file.path)}
-                    download={`${file.name}.zip`}
-                    className="text-[#616f89] dark:text-text-muted hover:text-primary transition-colors"
-                    title="Download ZIP"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <span className="material-symbols-outlined text-xl">folder_zip</span>
-                  </a>
-                </>
+                <button
+                  className="text-[#616f89] dark:text-text-muted hover:text-primary transition-colors"
+                  title="Download ZIP"
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    try {
+                      const url = getZipUrl(file.path);
+                      const response = await fetch(url, {
+                        method: 'GET',
+                        headers: {
+                          'Accept': '*/*',
+                        },
+                      });
+                      
+                      if (!response.ok) {
+                        throw new Error(`下载失败: ${response.status} ${response.statusText}`);
+                      }
+                      
+                      const blob = await response.blob();
+                      const blobUrl = window.URL.createObjectURL(blob);
+                      const link = document.createElement('a');
+                      link.href = blobUrl;
+                      link.download = `${file.name}.zip`;
+                      link.style.display = 'none';
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                      window.URL.revokeObjectURL(blobUrl);
+                    } catch (error) {
+                      console.error('Download ZIP error:', error);
+                      const errorMessage = error instanceof Error ? error.message : '下载失败';
+                      onError(errorMessage);
+                    }
+                  }}
+                >
+                  <span className="material-symbols-outlined text-xl">folder_zip</span>
+                </button>
               ) : (
-                <a
-                  href={getDownloadUrl(file.path)}
-                  download={file.name}
+                <button
                   className="text-[#616f89] dark:text-text-muted hover:text-primary transition-colors"
                   title="Download"
-                  onClick={(e) => e.stopPropagation()}
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    try {
+                      const url = getDownloadUrl(file.path);
+                      // Use fetch to download the file
+                      const response = await fetch(url, {
+                        method: 'GET',
+                        headers: {
+                          'Accept': '*/*',
+                        },
+                      });
+                      
+                      if (!response.ok) {
+                        throw new Error(`下载失败: ${response.status} ${response.statusText}`);
+                      }
+                      
+                      // Get the blob from response
+                      const blob = await response.blob();
+                      
+                      // Create a temporary URL for the blob
+                      const blobUrl = window.URL.createObjectURL(blob);
+                      
+                      // Create a temporary link element
+                      const link = document.createElement('a');
+                      link.href = blobUrl;
+                      link.download = file.name;
+                      link.style.display = 'none';
+                      
+                      // Append to body, click, and remove
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                      
+                      // Clean up the blob URL
+                      window.URL.revokeObjectURL(blobUrl);
+                    } catch (error) {
+                      console.error('Download error:', error);
+                      const errorMessage = error instanceof Error ? error.message : '下载失败';
+                      onError(errorMessage);
+                    }
+                  }}
                 >
                   <span className="material-symbols-outlined text-xl">download</span>
-                </a>
+                </button>
               )}
               <button
                 className="text-[#616f89] dark:text-text-muted hover:text-red-500 transition-colors"

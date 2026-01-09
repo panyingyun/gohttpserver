@@ -62,7 +62,9 @@ export async function uploadFiles(
 
 // Delete file or directory
 export async function deleteFile(path: string): Promise<DeleteResponse> {
-  const url = `${API_BASE}/delete${path}`;
+  // Ensure path starts with /
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  const url = `${API_BASE}/delete${normalizedPath}`;
   const response = await fetch(url, {
     method: 'DELETE',
   });
@@ -71,10 +73,14 @@ export async function deleteFile(path: string): Promise<DeleteResponse> {
 
 // Get download URL
 export function getDownloadUrl(path: string): string {
-  return `${API_BASE}/download${path}`;
+  // Ensure path starts with /
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  return `${API_BASE}/download${normalizedPath}`;
 }
 
 // Get zip download URL
 export function getZipUrl(path: string): string {
-  return `${API_BASE}/zip${path}`;
+  // Ensure path starts with /
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  return `${API_BASE}/zip${normalizedPath}`;
 }
