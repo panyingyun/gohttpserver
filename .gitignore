@@ -31,7 +31,6 @@ go.work.sum
 # .idea/
 # .vscode/
 data/
-server
 web/dist/
 web/node_modules/
 dockerpush.sh
