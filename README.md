@@ -30,7 +30,19 @@
 
 ## 安装
 
-### 从源码构建
+### 使用 Docker构建 [推荐]
+
+```bash
+# 构建镜像
+docker stop gohttpserver
+docker rm gohttpserver
+docker build -t gohttpserver:latest .
+
+# 运行容器
+docker run -itd  --name gohttpserver -p 8080:8080 -v $(pwd)/data:/data gohttpserver:latest
+```
+
+### 从源码构建 [不推荐]
 
 ```bash
 git clone <repository-url>
@@ -49,18 +61,6 @@ npm run build
 # 构建后端
 cd ..
 go build ./cmd/server
-```
-
-### 使用 Docker
-
-```bash
-# 构建镜像
-docker stop gohttpserver
-docker rm gohttpserver
-docker build -t gohttpserver:latest .
-
-# 运行容器
-docker run -itd  --name gohttpserver -p 8080:8080 -v $(pwd)/data:/data gohttpserver:latest
 ```
 
 ## 使用方法
