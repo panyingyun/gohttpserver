@@ -29,3 +29,22 @@
 # 完成代码请保存
 # 完成代码不需要提交代码
 # 完成代码不需要提示code review
+
+# Struct Define
+前后端分离模式下，目录结构为
+backend/
+├── cmd/
+├── internal/
+├── go.mod
+├── go.sum
+└── README.md
+web/
+├── public/
+├── src/
+├── package.json
+├── tsconfig.json
+├── vite.config.ts
+└── README.md
+├── Dockerfile
+├── docker-compose.yml
+└── README.md

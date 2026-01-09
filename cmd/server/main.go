@@ -23,6 +23,7 @@ var (
 	denyPaths    string
 	enableWebDAV bool
 	enableUpload bool
+	enableDelete bool
 	webDir       string
 )
 
@@ -53,6 +54,7 @@ func init() {
 	rootCmd.Flags().StringVar(&denyPaths, "deny-paths", "", "Comma-separated list of denied paths (supports wildcards)")
 	rootCmd.Flags().BoolVar(&enableWebDAV, "webdav", true, "Enable WebDAV support (default: true)")
 	rootCmd.Flags().BoolVar(&enableUpload, "upload", false, "Enable file upload functionality (default: false)")
+	rootCmd.Flags().BoolVar(&enableDelete, "delete", false, "Enable file delete functionality (default: false)")
 	rootCmd.Flags().StringVar(&webDir, "web-dir", "", "Directory for web frontend files (default: empty, no frontend)")
 }
 
@@ -69,6 +71,7 @@ func runServer(cmd *cobra.Command, args []string) error {
 		DenyPaths:     parsePaths(denyPaths),
 		EnableWebDAV:  enableWebDAV,
 		EnableUpload:  enableUpload,
+		EnableDelete:  enableDelete,
 		WebDir:        webDir,
 	}
 

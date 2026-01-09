@@ -24,6 +24,7 @@ type Config struct {
 	DenyPaths    []string
 	EnableWebDAV bool
 	EnableUpload bool
+	EnableDelete bool
 	WebDir       string // Directory for web frontend files
 }
 
@@ -95,7 +96,15 @@ func NewHTTPServer(config *Config) (*HTTPServer, error) {
 		})
 	}
 	
-	mux.HandleFunc("/api/delete/", authMW(http.HandlerFunc(srv.HandleDelete)).ServeHTTP)
+	// Delete handlers - only register if delete is enabled
+	if config.EnableDelete {
+		mux.HandleFunc("/api/delete/", authMW(http.HandlerFunc(srv.HandleDelete)).ServeHTTP)
+	} else {
+		// Return 403 Forbidden if delete is disabled
+		mux.HandleFunc("/api/delete/", func(w http.ResponseWriter, r *http.Request) {
+			http.Error(w, "File delete is disabled. Use --delete flag to enable.", http.StatusForbidden)
+		})
+	}
 
 	// Serve static web files if WebDir is set
 	// Note: This must be registered AFTER API routes to avoid conflicts
