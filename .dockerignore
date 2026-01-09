@@ -9,6 +9,7 @@ README.md
 LICENSE
 
 # Build artifacts
+gohttpserver
 server
 *.exe
 *.dll
@@ -41,9 +42,9 @@ docker-compose.yml
 .dockerignore
 
 # Node/TypeScript (exclude build artifacts, but keep source files for building)
-web/node_modules/
-web/dist/
-# Note: web/src/ is needed for building, so don't exclude it
+frontend/node_modules/
+frontend/dist/
+# Note: frontend/src/ is needed for building, so don't exclude it
 
 # Data and certificates (should be mounted as volumes)
 data/

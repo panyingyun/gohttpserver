@@ -21,16 +21,16 @@ services:
       - HTTPS_PORT=8443
     # Command line arguments (override CMD if needed)
     # Uncomment and modify as needed:
-    # command: ["./server", "--root", "/data", "--port", "8080", "--web-dir", "./web", "--webdav"]
+    # command: ["./gohttpserver", "--root", "/data", "--port", "8080", "--web-dir", "./web", "--webdav"]
     
     # For HTTPS, uncomment and provide cert/key:
-    # command: ["./server", "--root", "/data", "--port", "8080", "--https", "--https-port", "8443", "--cert", "/certs/cert.pem", "--key", "/certs/key.pem", "--web-dir", "./web"]
+    # command: ["./gohttpserver", "--root", "/data", "--port", "8080", "--https", "--https-port", "8443", "--cert", "/certs/cert.pem", "--key", "/certs/key.pem", "--web-dir", "./web"]
     
     # For authentication, add:
-    # command: ["./server", "--root", "/data", "--port", "8080", "--auth", "admin:password", "--web-dir", "./web"]
+    # command: ["./gohttpserver", "--root", "/data", "--port", "8080", "--auth", "admin:password", "--web-dir", "./web"]
     
     # For path access control:
-    # command: ["./server", "--root", "/data", "--port", "8080", "--allow-paths", "/public,/shared", "--deny-paths", "/private", "--web-dir", "./web"]
+    # command: ["./gohttpserver", "--root", "/data", "--port", "8080", "--allow-paths", "/public,/shared", "--deny-paths", "/private", "--web-dir", "./web"]
     
     networks:
       - gohttpserver-network

@@ -30,9 +30,18 @@
 
 ## 安装
 
-### 使用 Docker构建 [推荐]
+### 一键安装[强烈推荐]
+```bash
+docker stop gohttpserver
+docker rm gohttpserver
+docker run -itd --restart=always  -v /opt/gohttpserver:/data -p 8080:8080 --name  gohttpserver harbor.michaelapp.com/gohttpserver/gohttpserver:v1.1
+```
+
+### 本地使用Docker构建安装 [推荐]
 
 ```bash
+git clone <repository-url>
+cd gohttpserver
 # 构建镜像
 docker stop gohttpserver
 docker rm gohttpserver
@@ -48,19 +57,19 @@ docker run -itd  --name gohttpserver -p 8080:8080 -v $(pwd)/data:/data gohttpser
 git clone <repository-url>
 cd gohttpserver
 
-# 安装后端依赖
+# 构建后端
+cd backend
 go mod download
-
-# 安装前端依赖
-cd web
-npm install
+go build -o gohttpserver ./cmd/server
 
 # 构建前端
+cd ../frontend
+npm install
 npm run build
 
-# 构建后端
-cd ..
-go build ./cmd/server
+# 运行（需要将前端构建产物复制到后端可访问的位置）
+cd ../backend
+./gohttpserver --root /data --port 8080 --web-dir ../frontend/dist
 ```
 
 ## 使用方法
@@ -69,22 +78,22 @@ go build ./cmd/server
 
 ```bash
 # 启动服务器（默认端口 8080，当前目录）
-./server
+./gohttpserver
 
 # 指定根目录和端口
-./server --root /path/to/files --port 9000
+./gohttpserver --root /path/to/files --port 9000
 
 # 启用前端（需要先构建前端）
-./server --root ./data --port 8080 --web-dir ./web/dist
+./gohttpserver --root ./data --port 8080 --web-dir ./frontend/dist
 
 # 启用 HTTPS
-./server --https --cert cert.pem --key key.pem
+./gohttpserver --https --cert cert.pem --key key.pem
 
 # 启用 HTTP Basic 认证
-./server --auth "username:password"
+./gohttpserver --auth "username:password"
 
 # 启用 WebDAV（默认启用）
-./server --webdav
+./gohttpserver --webdav
 ```
 
 ### 命令行参数
@@ -101,19 +110,21 @@ go build ./cmd/server
 | `--allow-paths` | | 允许访问的路径列表（逗号分隔，支持通配符） | |
 | `--deny-paths` | | 拒绝访问的路径列表（逗号分隔，支持通配符） | |
 | `--webdav` | | 启用 WebDAV 支持 | `true` |
+| `--upload` | | 启用文件上传功能 | `false` |
+| `--delete` | | 启用文件删除功能 | `false` |
 | `--web-dir` | | 前端文件目录 | |
 
 ### 访问控制示例
 
 ```bash
 # 只允许访问 /public 和 /shared 目录
-./server --allow-paths "/public,/shared"
+./gohttpserver --allow-paths "/public,/shared"
 
 # 拒绝访问 /private 目录
-./server --deny-paths "/private"
+./gohttpserver --deny-paths "/private"
 
 # 组合使用：允许 /public，拒绝 /public/secret
-./server --allow-paths "/public" --deny-paths "/public/secret"
+./gohttpserver --allow-paths "/public" --deny-paths "/public/secret"
 ```
 
 **注意**: 访问控制优先级：`deny` > `allow` > 默认策略（允许）
@@ -149,6 +160,8 @@ curl -O http://localhost:8080/api/zip/path/to/directory
 
 ### 文件上传
 
+**注意**: 需要启动时使用 `--upload` 标志启用上传功能。
+
 ```bash
 # 单文件上传
 curl -X POST -F "file=@/path/to/file.txt" -F "path=/" http://localhost:8080/api/upload
@@ -168,6 +181,8 @@ curl "http://localhost:8080/api/search?q=keyword&max=50"
 ```
 
 ### 删除文件/目录
+
+**注意**: 需要启动时使用 `--delete` 标志启用删除功能。
 
 ```bash
 # 删除文件
@@ -208,10 +223,29 @@ cadaver http://localhost:8080/
 
 ## 开发
 
+### 项目结构
+
+```
+gohttpserver/
+├── README.md
+├── docker-compose.yml
+├── Dockerfile
+├── backend/              # Go 后端
+│   ├── cmd/
+│   ├── internal/
+│   ├── go.mod
+│   └── README.md
+└── frontend/             # React 前端
+    ├── src/
+    ├── public/
+    ├── package.json
+    └── README.md
+```
+
 ### 前端开发
 
 ```bash
-cd web
+cd frontend
 npm install
 npm run dev  # 开发模式，支持热重载
 ```
@@ -221,9 +255,13 @@ npm run dev  # 开发模式，支持热重载
 ### 后端开发
 
 ```bash
-# 运行服务器
-go run ./cmd/server --root ./data --port 8080 --web-dir ./web/dist
+cd backend
+go run ./cmd/server --root ../data --port 8080 --web-dir ../frontend/dist
 ```
+
+详细开发说明请参考：
+- [backend/README.md](backend/README.md) - 后端开发文档
+- [frontend/README.md](frontend/README.md) - 前端开发文档
 
 ## Docker 使用
 

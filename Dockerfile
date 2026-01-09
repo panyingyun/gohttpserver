@@ -6,17 +6,17 @@ FROM node:20-alpine AS frontend-builder
 WORKDIR /build
 
 # Copy package files
-COPY web/package.json web/package-lock.json* ./
-COPY web/tsconfig.json web/tsconfig.node.json web/vite.config.ts ./
-COPY web/tailwind.config.js web/postcss.config.js ./
+COPY frontend/package.json frontend/package-lock.json* ./
+COPY frontend/tsconfig.json frontend/tsconfig.node.json frontend/vite.config.ts ./
+COPY frontend/tailwind.config.js frontend/postcss.config.js ./
 
 # Install dependencies
 RUN npm ci
 
 # Copy source files
-COPY web/index.html ./
-COPY web/public ./public
-COPY web/src ./src
+COPY frontend/index.html ./
+COPY frontend/public ./public
+COPY frontend/src ./src
 
 # Build frontend
 RUN npm run build
@@ -34,17 +34,17 @@ ENV GOPROXY=https://goproxy.cn,https://proxy.golang.org,direct
 ENV GOSUMDB=sum.golang.org
 
 # Copy go mod files
-COPY go.mod go.sum ./
+COPY backend/go.mod backend/go.sum ./
 
 # Download dependencies with retry
 RUN go mod download || (sleep 5 && go mod download) || (sleep 10 && go mod download)
 
 # Copy source code
-COPY cmd ./cmd
-COPY internal ./internal
+COPY backend/cmd ./cmd
+COPY backend/internal ./internal
 
 # Build the application
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -o server ./cmd/server
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -o gohttpserver ./cmd/server
 
 # Stage 3: Final image
 FROM alpine:latest
@@ -55,7 +55,7 @@ RUN apk --no-cache add ca-certificates tzdata
 WORKDIR /app
 
 # Copy binary from builder
-COPY --from=backend-builder /build/server .
+COPY --from=backend-builder /build/gohttpserver .
 
 # Copy frontend files from frontend builder
 COPY --from=frontend-builder /build/dist ./web
@@ -71,4 +71,4 @@ ENV ROOT_DIR=/data
 ENV PORT=8080
 
 # Run the server
-CMD ["./server", "--root", "/data", "--port", "8080", "--web-dir", "./web"]
+CMD ["./gohttpserver", "--root", "/data", "--port", "8080", "--web-dir", "./web"]
