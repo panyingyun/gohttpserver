@@ -17,12 +17,13 @@ body {
 }
 
 .app-layout {
-  display: flex;
+  display: flex !important;
   flex: 1;
-  overflow: hidden;
+  overflow: visible;
   min-height: 0;
   position: relative;
   width: 100%;
+  align-items: stretch;
 }
 
 .main-content {
@@ -30,6 +31,7 @@ body {
   overflow-y: auto;
   min-width: 0;
   min-height: 0;
+  order: 1;
 }
 
 header {
@@ -246,6 +248,8 @@ header h1 {
   opacity: 1 !important;
   z-index: 10 !important;
   box-sizing: border-box !important;
+  height: 100% !important;
+  order: 2 !important;
 }
 
 .transfer-center {

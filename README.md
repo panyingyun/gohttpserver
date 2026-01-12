@@ -48,7 +48,7 @@ docker rm gohttpserver
 docker build -t gohttpserver:latest .
 
 # 运行容器
-docker run -itd  --name gohttpserver -p 8900:8080 -v $(pwd)/data:/data gohttpserver:latest --upload  --delete
+docker run -itd  --name gohttpserver -p 8900:8080 -v $(pwd)/data:/data gohttpserver:latest 
 ```
 
 ### 从源码构建 [不推荐]
