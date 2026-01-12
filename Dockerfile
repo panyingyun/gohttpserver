@@ -1,7 +1,7 @@
 # Multi-stage build for Go HTTP Server with React frontend
 
 # Stage 1: Build React frontend
-FROM node:20-alpine AS frontend-builder
+FROM node:24-alpine AS frontend-builder
 
 WORKDIR /build
 
@@ -11,6 +11,7 @@ COPY frontend/tsconfig.json frontend/tsconfig.node.json frontend/vite.config.ts 
 COPY frontend/tailwind.config.js frontend/postcss.config.js ./
 
 # Install dependencies
+RUN npm install -g npm@11.7.0
 RUN npm ci
 
 # Copy source files
@@ -71,4 +72,4 @@ ENV ROOT_DIR=/data
 ENV PORT=8080
 
 # Run the server
-CMD ["./gohttpserver", "--root", "/data", "--port", "8080", "--web-dir", "./web"]
+CMD ["./gohttpserver", "--root", "/data", "--port", "8080", "--web-dir", "./web","--upload", "--delete"]
