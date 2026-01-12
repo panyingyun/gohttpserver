@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
 )
 
 // Config holds server configuration
@@ -80,7 +81,7 @@ func NewHTTPServer(config *Config) (*HTTPServer, error) {
 	mux.HandleFunc("/api/search", authMW(http.HandlerFunc(srv.HandleSearch)).ServeHTTP)
 	mux.HandleFunc("/api/download/", authMW(http.HandlerFunc(srv.HandleDownload)).ServeHTTP)
 	mux.HandleFunc("/api/zip/", authMW(http.HandlerFunc(srv.HandleZip)).ServeHTTP)
-
+	
 	// Upload handlers - only register if upload is enabled
 	if config.EnableUpload {
 		mux.HandleFunc("/api/upload", authMW(http.HandlerFunc(srv.HandleUpload)).ServeHTTP)
@@ -94,7 +95,7 @@ func NewHTTPServer(config *Config) (*HTTPServer, error) {
 			http.Error(w, "File upload is disabled. Use --upload flag to enable.", http.StatusForbidden)
 		})
 	}
-
+	
 	// Delete handlers - only register if delete is enabled
 	if config.EnableDelete {
 		mux.HandleFunc("/api/delete/", authMW(http.HandlerFunc(srv.HandleDelete)).ServeHTTP)
@@ -115,45 +116,45 @@ func NewHTTPServer(config *Config) (*HTTPServer, error) {
 				// Use a custom handler to skip API paths and handle index.html
 				// This handler is NOT wrapped with authMW to allow public access to frontend
 				mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-					// Skip API routes
-					if strings.HasPrefix(r.URL.Path, "/api/") {
-						http.NotFound(w, r)
-						return
-					}
-
-					// If path is root, serve index.html
-					path := r.URL.Path
-					if path == "/" {
-						indexPath := filepath.Join(webDir, "index.html")
-						if _, err := os.Stat(indexPath); err == nil {
-							http.ServeFile(w, r, indexPath)
+						// Skip API routes
+						if strings.HasPrefix(r.URL.Path, "/api/") {
+							http.NotFound(w, r)
 							return
 						}
-					}
-
-					// For other paths, serve files directly
-					// Remove leading slash and join with webDir
-					requestPath := strings.TrimPrefix(path, "/")
-					if requestPath == "" {
-						requestPath = "index.html"
-					}
-					filePath := filepath.Join(webDir, requestPath)
-
-					// Check if file exists
-					if info, err := os.Stat(filePath); err == nil && !info.IsDir() {
-						http.ServeFile(w, r, filePath)
-						return
-					}
-
-					// If not found, try index.html for directory requests
-					if strings.HasSuffix(path, "/") {
-						indexPath := filepath.Join(webDir, "index.html")
-						if _, err := os.Stat(indexPath); err == nil {
-							http.ServeFile(w, r, indexPath)
+						
+						// If path is root, serve index.html
+						path := r.URL.Path
+						if path == "/" {
+							indexPath := filepath.Join(webDir, "index.html")
+							if _, err := os.Stat(indexPath); err == nil {
+								http.ServeFile(w, r, indexPath)
+								return
+							}
+						}
+						
+						// For other paths, serve files directly
+						// Remove leading slash and join with webDir
+						requestPath := strings.TrimPrefix(path, "/")
+						if requestPath == "" {
+							requestPath = "index.html"
+						}
+						filePath := filepath.Join(webDir, requestPath)
+						
+						// Check if file exists
+						if info, err := os.Stat(filePath); err == nil && !info.IsDir() {
+							http.ServeFile(w, r, filePath)
 							return
 						}
-					}
-
+						
+						// If not found, try index.html for directory requests
+						if strings.HasSuffix(path, "/") {
+							indexPath := filepath.Join(webDir, "index.html")
+							if _, err := os.Stat(indexPath); err == nil {
+								http.ServeFile(w, r, indexPath)
+								return
+							}
+						}
+						
 					// Otherwise return 404
 					http.NotFound(w, r)
 				})

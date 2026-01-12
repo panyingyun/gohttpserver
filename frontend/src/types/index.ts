@@ -36,16 +36,3 @@ export interface DeleteResponse {
   success: boolean;
   path: string;
 }
-
-export interface TransferTask {
-  id: string;
-  name: string;
-  type: 'upload' | 'download';
-  status: 'pending' | 'active' | 'paused' | 'completed' | 'error';
-  progress: number; // 0-100
-  speed?: number; // MB/s
-  size: number;
-  error?: string;
-  startTime?: number;
-  estimatedTimeLeft?: number; // seconds
-}

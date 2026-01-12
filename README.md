@@ -30,11 +30,11 @@
 
 ## 安装
 
-### 使用编译完成的包一键安装[强烈推荐]
+### 一键安装[强烈推荐]
 ```bash
 docker stop gohttpserver
 docker rm gohttpserver
-docker run -itd --restart=always  -v /opt/gohttpserver:/data -p 8080:8080 --name  gohttpserver harbor.michaelapp.com/gohttpserver/gohttpserver:v1.2 
+docker run -itd --restart=always  -v /opt/gohttpserver:/data -p 8080:8080 --name  gohttpserver harbor.michaelapp.com/gohttpserver/gohttpserver:v1.1
 ```
 
 ### 本地使用Docker构建安装 [推荐]
@@ -48,7 +48,7 @@ docker rm gohttpserver
 docker build -t gohttpserver:latest .
 
 # 运行容器
-docker run -itd  --name gohttpserver -p 8900:8080 -v $(pwd)/data:/data gohttpserver:latest 
+docker run -itd  --name gohttpserver -p 8080:8080 -v $(pwd)/data:/data gohttpserver:latest
 ```
 
 ### 从源码构建 [不推荐]
@@ -59,12 +59,13 @@ cd gohttpserver
 
 # 构建后端
 cd backend
-make build
+go mod download
+go build -o gohttpserver ./cmd/server
 
 # 构建前端
 cd ../frontend
-make env 
-make build
+npm install
+npm run build
 
 # 运行（需要将前端构建产物复制到后端可访问的位置）
 cd ../backend
@@ -76,17 +77,23 @@ cd ../backend
 ### 基本用法
 
 ```bash
+# 启动服务器（默认端口 8080，当前目录）
+./gohttpserver
+
+# 指定根目录和端口
+./gohttpserver --root /path/to/files --port 9000
+
 # 启用前端（需要先构建前端）
-./gohttpserver --root ../data --port 8080 --web-dir ../frontend/dist
+./gohttpserver --root ./data --port 8080 --web-dir ./frontend/dist
 
 # 启用 HTTPS
-./gohttpserver --root ../data --port 8080 --web-dir ../frontend/dist  --https --cert cert.pem --key key.pem
+./gohttpserver --https --cert cert.pem --key key.pem
 
 # 启用 HTTP Basic 认证
-./gohttpserver  --root ../data --port 8080 --web-dir ../frontend/dist --auth "username:password"
+./gohttpserver --auth "username:password"
 
 # 启用 WebDAV（默认启用）
-./gohttpserver  --root ../data --port 8080 --web-dir ../frontend/dist --webdav
+./gohttpserver --webdav
 ```
 
 ### 命令行参数
@@ -111,13 +118,13 @@ cd ../backend
 
 ```bash
 # 只允许访问 /public 和 /shared 目录
-./gohttpserver --root ../data --port 8080 --web-dir ../frontend/dist --allow-paths "/public,/shared"
+./gohttpserver --allow-paths "/public,/shared"
 
 # 拒绝访问 /private 目录
-./gohttpserver --root ../data --port 8080 --web-dir ../frontend/dist --deny-paths "/private"
+./gohttpserver --deny-paths "/private"
 
 # 组合使用：允许 /public，拒绝 /public/secret
-./gohttpserver --root ../data --port 8080 --web-dir ../frontend/dist --allow-paths "/public" --deny-paths "/public/secret"
+./gohttpserver --allow-paths "/public" --deny-paths "/public/secret"
 ```
 
 **注意**: 访问控制优先级：`deny` > `allow` > 默认策略（允许）
@@ -249,9 +256,9 @@ npm run dev  # 开发模式，支持热重载
 
 ```bash
 cd backend
-go run ./cmd/gohttpserver --root ../data --port 8080 --web-dir ../frontend/dist
+go run ./cmd/server --root ../data --port 8080 --web-dir ../frontend/dist
 ```
-server
+
 详细开发说明请参考：
 - [backend/README.md](backend/README.md) - 后端开发文档
 - [frontend/README.md](frontend/README.md) - 前端开发文档

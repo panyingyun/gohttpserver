@@ -12,7 +12,8 @@ frontend/
 │   ├── components/         # React 组件
 │   │   ├── FileList.tsx    # 文件列表组件
 │   │   ├── Header.tsx      # 头部组件
-│   │   └── Sidebar.tsx     # 侧边栏组件
+│   │   ├── Sidebar.tsx     # 侧边栏组件
+│   │   └── TransferCenter.tsx  # 传输中心组件
 │   ├── services/
 │   │   └── api.ts          # API 客户端
 │   ├── types/

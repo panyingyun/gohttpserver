@@ -81,20 +81,20 @@ func addFileToZip(zw *zip.Writer, filePath, zipPath, rootDir string) error {
 func SanitizePath(rootDir, requestedPath string) (string, error) {
 	// Clean the path to prevent directory traversal
 	cleanPath := filepath.Clean(requestedPath)
-
+	
 	// Remove leading slashes
 	cleanPath = strings.TrimPrefix(cleanPath, "/")
 	cleanPath = strings.TrimPrefix(cleanPath, "\\")
 
 	// Build full path
 	fullPath := filepath.Join(rootDir, cleanPath)
-
+	
 	// Ensure the path is within root directory
 	absRoot, err := filepath.Abs(rootDir)
 	if err != nil {
 		return "", err
 	}
-
+	
 	absPath, err := filepath.Abs(fullPath)
 	if err != nil {
 		return "", err
