@@ -43,7 +43,14 @@ const App: React.FC = () => {
   }, [currentPath]);
 
   useEffect(() => {
-    loadFiles();
+    // Check if there's a path parameter in the URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const pathParam = urlParams.get('path');
+    if (pathParam) {
+      loadFiles(pathParam);
+    } else {
+      loadFiles();
+    }
   }, []);
 
   const handleNavigate = useCallback((path: string) => {

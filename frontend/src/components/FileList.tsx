@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { formatSize } from '../utils/format';
 import { getDownloadUrl, getZipUrl, deleteFile } from '../services/api';
 import type { FileInfo } from '../types';
@@ -70,6 +70,8 @@ export const FileList: React.FC<FileListProps> = ({
   onRefresh,
   onError,
 }) => {
+  const [copiedPath, setCopiedPath] = useState<string | null>(null);
+
   const handleDelete = async (path: string, name: string) => {
     if (!confirm(`确定要删除 "${name}" 吗？`)) {
       return;
@@ -81,6 +83,34 @@ export const FileList: React.FC<FileListProps> = ({
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : '删除失败';
       onError(errorMessage);
+    }
+  };
+
+  const handleShare = async (file: FileInfo) => {
+    try {
+      // Generate share URL
+      const baseUrl = window.location.origin;
+      let shareUrl: string;
+      
+      if (file.is_dir) {
+        // For directories, share the list URL
+        shareUrl = `${baseUrl}?path=${encodeURIComponent(file.path)}`;
+      } else {
+        // For files, share the download URL
+        shareUrl = `${baseUrl}${getDownloadUrl(file.path)}`;
+      }
+
+      // Copy to clipboard
+      await navigator.clipboard.writeText(shareUrl);
+      
+      // Show success feedback
+      setCopiedPath(file.path);
+      setTimeout(() => {
+        setCopiedPath(null);
+      }, 2000);
+    } catch (error) {
+      console.error('Share error:', error);
+      onError('复制链接失败，请手动复制');
     }
   };
 
@@ -240,6 +270,20 @@ export const FileList: React.FC<FileListProps> = ({
                   <span className="material-symbols-outlined text-xl">download</span>
                 </button>
               )}
+              <button
+                className={`text-[#616f89] dark:text-text-muted hover:text-primary transition-colors ${
+                  copiedPath === file.path ? 'text-primary' : ''
+                }`}
+                title={copiedPath === file.path ? '已复制' : '分享'}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleShare(file);
+                }}
+              >
+                <span className="material-symbols-outlined text-xl">
+                  {copiedPath === file.path ? 'check_circle' : 'share'}
+                </span>
+              </button>
               <button
                 className="text-[#616f89] dark:text-text-muted hover:text-red-500 transition-colors"
                 title="Delete"
