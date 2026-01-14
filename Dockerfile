@@ -73,5 +73,11 @@ ENV PORT=8080
 # Example: docker run -e AUTH=admin:password123 ...
 # ENV AUTH=
 
-# Run the server (auth will be read from AUTH env var if set)
-CMD ["./gohttpserver", "--root", "/data", "--port", "8080", "--web-dir", "./web"]
+# Use ENTRYPOINT so that docker run arguments are appended, not replaced
+# This allows: docker run ... gohttpserver:latest --upload --delete
+ENTRYPOINT ["./gohttpserver"]
+
+# Default command arguments (can be overridden by docker run arguments)
+# Note: --upload and --delete are disabled by default for security
+# To enable upload/delete, add --upload --delete after the image name in docker run
+CMD ["--root", "/data", "--port", "8080", "--web-dir", "/app/web"]

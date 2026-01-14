@@ -47,11 +47,17 @@ docker stop gohttpserver
 docker rm gohttpserver
 docker build -t gohttpserver:latest .
 
-# 运行容器（无认证）
+# 运行容器（无认证，默认关闭上传和删除功能）
 docker run -itd  --name gohttpserver -p 8080:8080 -v $(pwd)/data:/data gohttpserver:latest
 
 # 运行容器（带认证，使用环境变量）
 docker run -itd --name gohttpserver -p 8080:8080 -v $(pwd)/data:/data -e AUTH=admin:password123 gohttpserver:latest
+
+# 运行容器（启用上传和删除功能）
+docker run -itd --name gohttpserver -p 8080:8080 -v $(pwd)/data:/data gohttpserver:latest --upload --delete
+
+# 运行容器（带认证并启用上传和删除功能）
+docker run -itd --name gohttpserver -p 8080:8080 -v $(pwd)/data:/data -e AUTH=admin:password123 gohttpserver:latest --upload --delete
 
 ```
 
@@ -95,6 +101,15 @@ cd ../backend
 
 # 启用 HTTP Basic 认证
 ./gohttpserver --auth "username:password"
+
+# 启用文件上传功能（默认关闭）
+./gohttpserver --upload
+
+# 启用文件删除功能（默认关闭）
+./gohttpserver --delete
+
+# 同时启用上传和删除功能
+./gohttpserver --upload --delete
 
 # 启用 WebDAV（默认启用）
 ./gohttpserver --webdav
@@ -232,7 +247,6 @@ cadaver http://localhost:8080/
 ```
 gohttpserver/
 ├── README.md
-├── docker-compose.yml
 ├── Dockerfile
 ├── backend/              # Go 后端
 │   ├── cmd/
@@ -285,17 +299,6 @@ docker run -d \
   -v $(pwd)/data:/data \
   gohttpserver:latest
 
-# 使用 docker-compose（无认证）
-docker-compose up -d
-
-# 使用 docker-compose（带认证）
-# 方法1: 在 docker-compose.yml 中取消注释 AUTH 环境变量
-# 方法2: 使用环境变量文件
-echo "AUTH=admin:password123" > .env
-docker-compose up -d
-
-# 方法3: 直接在命令行设置环境变量
-AUTH=admin:password123 docker-compose up -d
 ```
 
 ## 安全建议

@@ -42,7 +42,6 @@ gohttpserver/
 ├── go.mod
 ├── go.sum
 ├── Dockerfile
-├── docker-compose.yml
 └── README.md
 ```
 

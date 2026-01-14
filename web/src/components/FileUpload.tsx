@@ -29,9 +29,13 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   }, []);
 
   const handleUpload = useCallback(async (files: File[]) => {
+    // Generate unique task IDs for each file
+    let taskIndex = 0;
     const uploadPromises = files.map((file) => {
       return new Promise<void>((resolve, reject) => {
-        const taskId = `upload-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        // Use index and timestamp to ensure unique IDs
+        const taskId = `upload-${Date.now()}-${taskIndex++}-${Math.random().toString(36).substr(2, 9)}`;
+        const startTime = Date.now();
         const task: TransferTask = {
           id: taskId,
           name: file.name,
@@ -39,7 +43,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           status: 'pending',
           progress: 0,
           size: file.size,
-          startTime: Date.now(),
+          startTime: startTime,
         };
 
         onTaskAdd(task);
@@ -49,19 +53,31 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         formData.append('files', file);
 
         const xhr = new XMLHttpRequest();
+        
+        // Browser will automatically include Basic Auth credentials if user has logged in
+        // We don't need to manually set Authorization header as browser handles it
+        // XMLHttpRequest will use the same credentials as fetch requests
+
+        // Set status to active immediately when upload starts
+        xhr.addEventListener('loadstart', () => {
+          onTaskUpdate(taskId, {
+            status: 'active',
+            progress: 0,
+          });
+        });
 
         xhr.upload.addEventListener('progress', (e) => {
-          if (e.lengthComputable) {
+          if (e.lengthComputable && e.total > 0) {
             const progress = Math.round((e.loaded / e.total) * 100);
-            const elapsed = (Date.now() - (task.startTime || 0)) / 1000;
-            if (elapsed > 0) {
+            const elapsed = (Date.now() - startTime) / 1000;
+            if (elapsed > 0 && e.loaded > 0) {
               const speed = e.loaded / elapsed / 1024 / 1024; // MB/s
-              const remaining = ((e.total - e.loaded) / (e.loaded / elapsed)) / 1000;
+              const remaining = e.total > e.loaded ? ((e.total - e.loaded) / (e.loaded / elapsed)) / 1000 : 0;
 
               onTaskUpdate(taskId, {
                 status: 'active',
                 progress,
-                speed,
+                speed: speed > 0 ? speed : undefined,
                 estimatedTimeLeft: remaining > 0 ? remaining : undefined,
               });
             } else {
@@ -79,13 +95,25 @@ export const FileUpload: React.FC<FileUploadProps> = ({
               status: 'completed',
               progress: 100,
             });
-            // Auto remove completed task after 3 seconds
-            setTimeout(() => {
-              onTaskUpdate(taskId, { status: 'completed' });
-            }, 3000);
             resolve();
           } else {
-            const errorMessage = `上传失败: HTTP ${xhr.status}`;
+            let errorMessage = `上传失败: HTTP ${xhr.status}`;
+            if (xhr.status === 401) {
+              errorMessage = '需要认证，请刷新页面并输入用户名和密码';
+            } else if (xhr.status === 403) {
+              errorMessage = '访问被拒绝';
+            } else if (xhr.status === 405) {
+              errorMessage = '上传功能未启用，请使用 --upload 参数启动服务器';
+            } else {
+              try {
+                const responseText = xhr.responseText;
+                if (responseText) {
+                  errorMessage = `上传失败: ${responseText.substring(0, 100)}`;
+                }
+              } catch (e) {
+                // Ignore parsing errors
+              }
+            }
             onTaskUpdate(taskId, {
               status: 'error',
               error: errorMessage,
@@ -95,7 +123,16 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         });
 
         xhr.addEventListener('error', () => {
-          const errorMessage = '上传失败: 网络错误';
+          const errorMessage = '上传失败: 网络错误，请检查网络连接';
+          onTaskUpdate(taskId, {
+            status: 'error',
+            error: errorMessage,
+          });
+          reject(new Error(errorMessage));
+        });
+        
+        xhr.addEventListener('timeout', () => {
+          const errorMessage = '上传失败: 请求超时';
           onTaskUpdate(taskId, {
             status: 'error',
             error: errorMessage,
@@ -111,6 +148,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         });
 
         xhr.open('POST', '/api/upload');
+        xhr.timeout = 300000; // 5 minutes timeout
         xhr.send(formData);
       });
     });

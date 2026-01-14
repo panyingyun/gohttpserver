@@ -111,8 +111,15 @@ func NewHTTPServer(config *Config) (*HTTPServer, error) {
 	// Static files should NOT go through auth middleware as they are frontend resources
 	if config.WebDir != "" {
 		webDir, err := filepath.Abs(config.WebDir)
-		if err == nil {
-			if info, err := os.Stat(webDir); err == nil && info.IsDir() {
+		if err != nil {
+			fmt.Printf("Warning: Failed to resolve web directory path '%s': %v\n", config.WebDir, err)
+		} else {
+			fmt.Printf("Web directory: %s\n", webDir)
+			if info, err := os.Stat(webDir); err != nil {
+				fmt.Printf("Warning: Web directory does not exist or is not accessible: %s, error: %v\n", webDir, err)
+			} else if !info.IsDir() {
+				fmt.Printf("Warning: Web directory path is not a directory: %s\n", webDir)
+			} else {
 				// Use a custom handler to skip API paths and handle index.html
 				// This handler is NOT wrapped with authMW to allow public access to frontend
 				mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -126,9 +133,13 @@ func NewHTTPServer(config *Config) (*HTTPServer, error) {
 						path := r.URL.Path
 						if path == "/" {
 							indexPath := filepath.Join(webDir, "index.html")
+							fmt.Printf("Serving root path, checking index.html at: %s\n", indexPath)
 							if _, err := os.Stat(indexPath); err == nil {
+								fmt.Printf("Found index.html, serving...\n")
 								http.ServeFile(w, r, indexPath)
 								return
+							} else {
+								fmt.Printf("index.html not found at %s, error: %v\n", indexPath, err)
 							}
 						}
 						
@@ -140,8 +151,11 @@ func NewHTTPServer(config *Config) (*HTTPServer, error) {
 						}
 						filePath := filepath.Join(webDir, requestPath)
 						
+						fmt.Printf("Checking file: %s\n", filePath)
+						
 						// Check if file exists
 						if info, err := os.Stat(filePath); err == nil && !info.IsDir() {
+							fmt.Printf("Found file, serving: %s\n", filePath)
 							http.ServeFile(w, r, filePath)
 							return
 						}
@@ -156,10 +170,14 @@ func NewHTTPServer(config *Config) (*HTTPServer, error) {
 						}
 						
 					// Otherwise return 404
+					fmt.Printf("404: File not found for path: %s, webDir: %s, checked filePath: %s\n", r.URL.Path, webDir, filePath)
 					http.NotFound(w, r)
 				})
+				fmt.Printf("Static file handler registered for web directory: %s\n", webDir)
 			}
 		}
+	} else {
+		fmt.Printf("Web directory not configured (WebDir is empty)\n")
 	}
 
 	// Apply middleware
