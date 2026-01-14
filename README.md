@@ -35,7 +35,7 @@
 ```bash
 docker stop gohttpserver
 docker rm gohttpserver
-docker run -itd --restart=always  -v /opt/gohttpserver:/data -p 8080:8080  -e AUTH=admin:password123 --name  gohttpserver harbor.michaelapp.com/gohttpserver/gohttpserver:v1.1
+docker run -itd --restart=always  -v /opt/gohttpserver:/data -p 8080:8080  -e AUTH=admin:password123 --name  gohttpserver harbor.michaelapp.com/gohttpserver/gohttpserver:v1.5
 ```
 
 ### 本地使用Docker构建安装 [推荐]
