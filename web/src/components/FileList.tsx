@@ -16,6 +16,9 @@ export const FileList: React.FC<FileListProps> = ({
   onRefresh,
   onError,
 }) => {
+  // Ensure files is always an array
+  const fileList = Array.isArray(files) ? files : [];
+  
   const handleDelete = async (path: string, name: string) => {
     if (!confirm(`确定要删除 "${name}" 吗？`)) {
       return;
@@ -30,8 +33,18 @@ export const FileList: React.FC<FileListProps> = ({
     }
   };
 
-  if (files.length === 0) {
-    return <div className="empty-state">目录为空</div>;
+  if (fileList.length === 0) {
+    return (
+      <div className="empty-state">
+        <div>
+          <div style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.5 }}>📁</div>
+          <div style={{ fontSize: '16px', color: '#666' }}>目录为空</div>
+          <div style={{ fontSize: '14px', color: '#999', marginTop: '8px' }}>
+            拖拽文件到上方区域上传，或点击"选择文件"按钮
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -46,7 +59,7 @@ export const FileList: React.FC<FileListProps> = ({
           </tr>
         </thead>
         <tbody>
-          {files.map((file) => (
+          {fileList.map((file) => (
             <tr key={file.path}>
               <td>
                 <span className="file-icon">{file.is_dir ? '📁' : '📄'}</span>

@@ -22,8 +22,9 @@ const App: React.FC = () => {
 
     try {
       const response = await listFiles(path);
-      setFiles(response.files);
-      setCurrentPath(response.path);
+      // Ensure files is always an array
+      setFiles(Array.isArray(response.files) ? response.files : []);
+      setCurrentPath(response.path || path);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '加载失败';
       setError(errorMessage);
@@ -145,7 +146,7 @@ const App: React.FC = () => {
               <div className="loading">加载中...</div>
             ) : (
               <FileList
-                files={files}
+                files={Array.isArray(files) ? files : []}
                 onNavigate={handleNavigate}
                 onRefresh={() => loadFiles()}
                 onError={handleError}

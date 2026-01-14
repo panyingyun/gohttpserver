@@ -34,7 +34,7 @@
 ```bash
 docker stop gohttpserver
 docker rm gohttpserver
-docker run -itd --restart=always  -v /opt/gohttpserver:/data -p 8080:8080 --name  gohttpserver harbor.michaelapp.com/gohttpserver/gohttpserver:v1.1
+docker run -itd --restart=always  -v /opt/gohttpserver:/data -p 8080:8080  -e AUTH=admin:password123 --name  gohttpserver harbor.michaelapp.com/gohttpserver/gohttpserver:v1.1
 ```
 
 ### 本地使用Docker构建安装 [推荐]
@@ -47,8 +47,12 @@ docker stop gohttpserver
 docker rm gohttpserver
 docker build -t gohttpserver:latest .
 
-# 运行容器
+# 运行容器（无认证）
 docker run -itd  --name gohttpserver -p 8080:8080 -v $(pwd)/data:/data gohttpserver:latest
+
+# 运行容器（带认证，使用环境变量）
+docker run -itd --name gohttpserver -p 8080:8080 -v $(pwd)/data:/data -e AUTH=admin:password123 gohttpserver:latest
+
 ```
 
 ### 从源码构建 [不推荐]
@@ -106,7 +110,7 @@ cd ../backend
 | `--https` | | 启用 HTTPS | `false` |
 | `--cert` | | TLS 证书文件路径 | |
 | `--key` | | TLS 私钥文件路径 | |
-| `--auth` | | HTTP Basic 认证 (格式: username:password) | |
+| `--auth` | | HTTP Basic 认证 (格式: username:password，也可通过 AUTH 环境变量设置) | |
 | `--allow-paths` | | 允许访问的路径列表（逗号分隔，支持通配符） | |
 | `--deny-paths` | | 拒绝访问的路径列表（逗号分隔，支持通配符） | |
 | `--webdav` | | 启用 WebDAV 支持 | `true` |
@@ -281,14 +285,23 @@ docker run -d \
   -v $(pwd)/data:/data \
   gohttpserver:latest
 
-# 使用 docker-compose
+# 使用 docker-compose（无认证）
 docker-compose up -d
+
+# 使用 docker-compose（带认证）
+# 方法1: 在 docker-compose.yml 中取消注释 AUTH 环境变量
+# 方法2: 使用环境变量文件
+echo "AUTH=admin:password123" > .env
+docker-compose up -d
+
+# 方法3: 直接在命令行设置环境变量
+AUTH=admin:password123 docker-compose up -d
 ```
 
 ## 安全建议
 
 1. **生产环境使用 HTTPS**: 始终使用 `--https` 选项并配置有效的 TLS 证书
-2. **启用认证**: 使用 `--auth` 选项设置用户名和密码
+2. **启用认证**: 使用 `--auth` 选项或 `AUTH` 环境变量设置用户名和密码（格式: username:password）
 3. **路径访问控制**: 使用 `--allow-paths` 和 `--deny-paths` 限制访问范围
 4. **防火墙配置**: 仅开放必要的端口
 5. **定期更新**: 保持 Go 版本和依赖库的更新

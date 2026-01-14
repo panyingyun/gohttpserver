@@ -21,7 +21,34 @@ async function handleResponse<T>(response: Response): Promise<T> {
     const errorText = await response.text().catch(() => response.statusText);
     throw new Error(`HTTP ${response.status}: ${errorText}`);
   }
-  return response.json();
+  
+  // Handle empty response
+  const contentType = response.headers.get('content-type');
+  if (!contentType || !contentType.includes('application/json')) {
+    // If not JSON, return empty structure for list response
+    return { path: '/', files: [] } as T;
+  }
+  
+  try {
+    const data = await response.json();
+    
+    // Ensure list response has files array
+    if (data && typeof data === 'object') {
+      if ('files' in data && !Array.isArray(data.files)) {
+        data.files = [];
+      }
+      // Ensure path exists
+      if ('path' in data && !data.path) {
+        data.path = '/';
+      }
+    }
+    
+    return data || ({ path: '/', files: [] } as T);
+  } catch (jsonError) {
+    // If JSON parsing fails, return empty structure
+    console.warn('Failed to parse JSON response:', jsonError);
+    return { path: '/', files: [] } as T;
+  }
 }
 
 // List files in a directory

@@ -19,6 +19,9 @@ services:
       - ROOT_DIR=/data
       - PORT=8080
       - HTTPS_PORT=8443
+      # Set AUTH environment variable for authentication (format: username:password)
+      # Example: AUTH=admin:password123
+      # - AUTH=admin:password123
     # Command line arguments (override CMD if needed)
     # Uncomment and modify as needed:
     # command: ["./gohttpserver", "--root", "/data", "--port", "8080", "--web-dir", "./web", "--webdav"]

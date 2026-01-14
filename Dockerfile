@@ -61,7 +61,7 @@ COPY --from=backend-builder /build/gohttpserver .
 COPY --from=frontend-builder /build/dist ./web
 
 # Create directory for file storage
-RUN mkdir -p /data
+RUN mkdir -p /data && touch /data/README.md
 
 # Expose port
 EXPOSE 8080 8443
@@ -69,6 +69,9 @@ EXPOSE 8080 8443
 # Set default environment variables
 ENV ROOT_DIR=/data
 ENV PORT=8080
+# AUTH can be set via environment variable (format: username:password)
+# Example: docker run -e AUTH=admin:password123 ...
+# ENV AUTH=
 
-# Run the server
+# Run the server (auth will be read from AUTH env var if set)
 CMD ["./gohttpserver", "--root", "/data", "--port", "8080", "--web-dir", "./web"]

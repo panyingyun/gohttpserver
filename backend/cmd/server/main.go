@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
 
@@ -49,7 +50,7 @@ func init() {
 	rootCmd.Flags().BoolVar(&https, "https", false, "Enable HTTPS")
 	rootCmd.Flags().StringVar(&certFile, "cert", "", "TLS certificate file (required for HTTPS)")
 	rootCmd.Flags().StringVar(&keyFile, "key", "", "TLS private key file (required for HTTPS)")
-	rootCmd.Flags().StringVar(&auth, "auth", "", "HTTP Basic Auth (format: username:password)")
+	rootCmd.Flags().StringVar(&auth, "auth", "", "HTTP Basic Auth (format: username:password, or set AUTH env var)")
 	rootCmd.Flags().StringVar(&allowPaths, "allow-paths", "", "Comma-separated list of allowed paths (supports wildcards)")
 	rootCmd.Flags().StringVar(&denyPaths, "deny-paths", "", "Comma-separated list of denied paths (supports wildcards)")
 	rootCmd.Flags().BoolVar(&enableWebDAV, "webdav", true, "Enable WebDAV support (default: true)")
@@ -59,14 +60,36 @@ func init() {
 }
 
 func runServer(cmd *cobra.Command, args []string) error {
+	// Get auth from environment variable if not provided via flag
+	authValue := auth
+	if authValue == "" {
+		authValue = os.Getenv("AUTH")
+	}
+	
+	// Get rootDir from environment variable if not provided via flag
+	rootDirValue := rootDir
+	if rootDirValue == "." {
+		if envRoot := os.Getenv("ROOT_DIR"); envRoot != "" {
+			rootDirValue = envRoot
+		}
+	}
+	
+	// Get port from environment variable if not provided via flag
+	portValue := port
+	if envPort := os.Getenv("PORT"); envPort != "" && port == 8080 {
+		if p, err := strconv.Atoi(envPort); err == nil {
+			portValue = p
+		}
+	}
+	
 	config := &server.Config{
-		RootDir:      rootDir,
-		Port:         port,
+		RootDir:      rootDirValue,
+		Port:         portValue,
 		HTTPSPort:    httpsPort,
 		HTTPS:         https,
 		CertFile:      certFile,
 		KeyFile:       keyFile,
-		Auth:          auth,
+		Auth:          authValue,
 		AllowPaths:    parsePaths(allowPaths),
 		DenyPaths:     parsePaths(denyPaths),
 		EnableWebDAV:  enableWebDAV,
