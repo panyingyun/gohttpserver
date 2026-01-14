@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { listFiles } from './services/api';
+import { listFiles, uploadFiles } from './services/api';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { FileList } from './components/FileList';
 import { TransferCenter } from './components/TransferCenter';
+import { formatSize } from './utils/format';
 import type { FileInfo, SearchResult } from './types';
 
 interface Transfer {
@@ -65,18 +66,32 @@ const App: React.FC = () => {
     loadFiles();
   }, [loadFiles]);
 
-  const handleUploadSuccess = useCallback(() => {
+  const handleUploadSuccess = useCallback((uploadedFiles?: File[]) => {
     loadFiles();
-    // Add upload transfer (simplified)
-    const newTransfer: Transfer = {
-      id: Date.now().toString(),
-      name: 'Uploaded files',
-      type: 'upload',
-      status: 'completed',
-      progress: 100,
-      size: '0 KB',
-    };
-    setTransfers((prev) => [...prev, newTransfer]);
+    // Add upload transfer with actual file information
+    if (uploadedFiles && uploadedFiles.length > 0) {
+      const totalSize = uploadedFiles.reduce((sum, file) => sum + file.size, 0);
+      const newTransfer: Transfer = {
+        id: Date.now().toString(),
+        name: uploadedFiles.length === 1 ? uploadedFiles[0].name : `${uploadedFiles.length} files`,
+        type: 'upload',
+        status: 'completed',
+        progress: 100,
+        size: formatSize(totalSize),
+      };
+      setTransfers((prev) => [...prev, newTransfer]);
+    } else {
+      // Fallback for drag & drop or other upload methods
+      const newTransfer: Transfer = {
+        id: Date.now().toString(),
+        name: 'Uploaded files',
+        type: 'upload',
+        status: 'completed',
+        progress: 100,
+        size: '0 KB',
+      };
+      setTransfers((prev) => [...prev, newTransfer]);
+    }
   }, [loadFiles]);
 
   const handleError = useCallback((errorMessage: string) => {
@@ -162,14 +177,20 @@ const App: React.FC = () => {
 
         <button
           className="absolute bottom-8 right-8 size-14 bg-primary text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-10 shadow-primary/30"
-          onClick={() => {
+          onClick={async () => {
             const input = document.createElement('input');
             input.type = 'file';
             input.multiple = true;
             input.onchange = async (e) => {
               const files = Array.from((e.target as HTMLInputElement).files || []);
               if (files.length > 0) {
-                handleUploadSuccess();
+                try {
+                  await uploadFiles(files, currentPath);
+                  handleUploadSuccess(files);
+                } catch (error) {
+                  const errorMessage = error instanceof Error ? error.message : '上传失败';
+                  handleError(errorMessage);
+                }
               }
             };
             input.click();

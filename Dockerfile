@@ -44,7 +44,7 @@ COPY backend/cmd ./cmd
 COPY backend/internal ./internal
 
 # Build the application
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -o gohttpserver ./cmd/server
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o gohttpserver ./cmd/server
 
 # Stage 3: Final image
 FROM alpine:latest
@@ -73,11 +73,12 @@ ENV PORT=8080
 # Example: docker run -e AUTH=admin:password123 ...
 # ENV AUTH=
 
-# Use ENTRYPOINT so that docker run arguments are appended, not replaced
-# This allows: docker run ... gohttpserver:latest --upload --delete
-ENTRYPOINT ["./gohttpserver"]
+# Use ENTRYPOINT with shell form to allow parameter merging
+# This ensures --web-dir is always included even when custom args are provided
+ENTRYPOINT ["./gohttpserver", "--root", "/data", "--port", "8080", "--web-dir", "/app/web"]
 
-# Default command arguments (can be overridden by docker run arguments)
+# Default command arguments (can be appended via docker run)
 # Note: --upload and --delete are disabled by default for security
 # To enable upload/delete, add --upload --delete after the image name in docker run
-CMD ["--root", "/data", "--port", "8080", "--web-dir", "/app/web"]
+# Example: docker run ... gohttpserver:latest --upload --delete
+CMD []
