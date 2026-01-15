@@ -26,6 +26,7 @@ type Config struct {
 	EnableUpload bool
 	EnableDelete bool
 	WebDir       string // Directory for web frontend files
+	BaseURL      string // Base URL for sharing (e.g., http://10.0.203.100:8080)
 }
 
 // HTTPServer wraps the HTTP server
@@ -136,7 +137,7 @@ func NewHTTPServer(config *Config) (*HTTPServer, error) {
 							fmt.Printf("Serving root path, checking index.html at: %s\n", indexPath)
 							if _, err := os.Stat(indexPath); err == nil {
 								fmt.Printf("Found index.html, serving...\n")
-								http.ServeFile(w, r, indexPath)
+								serveIndexHTML(w, r, indexPath, config.BaseURL)
 								return
 							} else {
 								fmt.Printf("index.html not found at %s, error: %v\n", indexPath, err)
@@ -155,6 +156,11 @@ func NewHTTPServer(config *Config) (*HTTPServer, error) {
 						
 						// Check if file exists
 						if info, err := os.Stat(filePath); err == nil && !info.IsDir() {
+							// If it's index.html, inject config
+							if requestPath == "index.html" || strings.HasSuffix(requestPath, "/index.html") {
+								serveIndexHTML(w, r, filePath, config.BaseURL)
+								return
+							}
 							fmt.Printf("Found file, serving: %s\n", filePath)
 							http.ServeFile(w, r, filePath)
 							return
@@ -164,7 +170,7 @@ func NewHTTPServer(config *Config) (*HTTPServer, error) {
 						if strings.HasSuffix(path, "/") {
 							indexPath := filepath.Join(webDir, "index.html")
 							if _, err := os.Stat(indexPath); err == nil {
-								http.ServeFile(w, r, indexPath)
+								serveIndexHTML(w, r, indexPath, config.BaseURL)
 								return
 							}
 						}
@@ -221,6 +227,41 @@ func (hs *HTTPServer) Start() error {
 // Shutdown gracefully shuts down the server
 func (hs *HTTPServer) Shutdown(ctx context.Context) error {
 	return hs.server.Shutdown(ctx)
+}
+
+// serveIndexHTML serves index.html with injected configuration script
+func serveIndexHTML(w http.ResponseWriter, r *http.Request, indexPath string, baseURL string) {
+	// Read index.html file
+	content, err := os.ReadFile(indexPath)
+	if err != nil {
+		http.Error(w, "Failed to read index.html", http.StatusInternalServerError)
+		return
+	}
+
+	htmlContent := string(content)
+
+	// If BaseURL is set, inject configuration script before </head>
+	if baseURL != "" {
+		// Remove trailing slash if present
+		baseURL = strings.TrimSuffix(baseURL, "/")
+		configScript := fmt.Sprintf(`<script>window.__GOHTTPSERVER_CONFIG__={baseURL:"%s"};</script>`, baseURL)
+		
+		// Try to inject before </head>
+		if strings.Contains(htmlContent, "</head>") {
+			htmlContent = strings.Replace(htmlContent, "</head>", configScript+"</head>", 1)
+		} else if strings.Contains(htmlContent, "<body>") {
+			// Fallback: inject before <body> if </head> not found
+			htmlContent = strings.Replace(htmlContent, "<body>", configScript+"<body>", 1)
+		} else {
+			// Last resort: prepend to content
+			htmlContent = configScript + htmlContent
+		}
+	}
+
+	// Set content type
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(htmlContent))
 }
 
 // splitAuth splits auth string into username and password

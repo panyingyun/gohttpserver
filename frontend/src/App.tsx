@@ -49,7 +49,7 @@ const App: React.FC = () => {
     if (pathParam) {
       loadFiles(pathParam);
     } else {
-      loadFiles();
+    loadFiles();
     }
   }, []);
 
@@ -89,15 +89,15 @@ const App: React.FC = () => {
       setTransfers((prev) => [...prev, newTransfer]);
     } else {
       // Fallback for drag & drop or other upload methods
-      const newTransfer: Transfer = {
-        id: Date.now().toString(),
-        name: 'Uploaded files',
-        type: 'upload',
-        status: 'completed',
-        progress: 100,
-        size: '0 KB',
-      };
-      setTransfers((prev) => [...prev, newTransfer]);
+    const newTransfer: Transfer = {
+      id: Date.now().toString(),
+      name: 'Uploaded files',
+      type: 'upload',
+      status: 'completed',
+      progress: 100,
+      size: '0 KB',
+    };
+    setTransfers((prev) => [...prev, newTransfer]);
     }
   }, [loadFiles]);
 

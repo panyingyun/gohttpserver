@@ -1,15 +1,18 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/signal"
 	"strconv"
 	"strings"
 	"syscall"
+	"time"
+
+	"gohttpserver/internal/server"
 
 	"github.com/spf13/cobra"
-	"gohttpserver/internal/server"
 )
 
 var (
@@ -26,6 +29,7 @@ var (
 	enableUpload bool
 	enableDelete bool
 	webDir       string
+	baseURL      string
 )
 
 var rootCmd = &cobra.Command{
@@ -57,6 +61,7 @@ func init() {
 	rootCmd.Flags().BoolVar(&enableUpload, "upload", false, "Enable file upload functionality (default: false)")
 	rootCmd.Flags().BoolVar(&enableDelete, "delete", false, "Enable file delete functionality (default: false)")
 	rootCmd.Flags().StringVar(&webDir, "web-dir", "", "Directory for web frontend files (default: empty, no frontend)")
+	rootCmd.Flags().StringVar(&baseURL, "base-url", "", "Base URL for sharing links (e.g., http://10.0.203.100:8080 or https://example.com:8080). If not set, uses current origin")
 }
 
 func runServer(cmd *cobra.Command, args []string) error {
@@ -65,7 +70,7 @@ func runServer(cmd *cobra.Command, args []string) error {
 	if authValue == "" {
 		authValue = os.Getenv("AUTH")
 	}
-	
+
 	// Get rootDir from environment variable if not provided via flag
 	rootDirValue := rootDir
 	if rootDirValue == "." {
@@ -73,7 +78,7 @@ func runServer(cmd *cobra.Command, args []string) error {
 			rootDirValue = envRoot
 		}
 	}
-	
+
 	// Get port from environment variable if not provided via flag
 	portValue := port
 	if envPort := os.Getenv("PORT"); envPort != "" && port == 8080 {
@@ -81,21 +86,28 @@ func runServer(cmd *cobra.Command, args []string) error {
 			portValue = p
 		}
 	}
-	
+
+	// Get baseURL from environment variable if not provided via flag
+	baseURLValue := baseURL
+	if baseURLValue == "" {
+		baseURLValue = os.Getenv("BASE_URL")
+	}
+
 	config := &server.Config{
 		RootDir:      rootDirValue,
 		Port:         portValue,
 		HTTPSPort:    httpsPort,
-		HTTPS:         https,
-		CertFile:      certFile,
-		KeyFile:       keyFile,
-		Auth:          authValue,
-		AllowPaths:    parsePaths(allowPaths),
-		DenyPaths:     parsePaths(denyPaths),
-		EnableWebDAV:  enableWebDAV,
-		EnableUpload:  enableUpload,
-		EnableDelete:  enableDelete,
-		WebDir:        webDir,
+		HTTPS:        https,
+		CertFile:     certFile,
+		KeyFile:      keyFile,
+		Auth:         authValue,
+		AllowPaths:   parsePaths(allowPaths),
+		DenyPaths:    parsePaths(denyPaths),
+		EnableWebDAV: enableWebDAV,
+		EnableUpload: enableUpload,
+		EnableDelete: enableDelete,
+		WebDir:       webDir,
+		BaseURL:      baseURLValue,
 	}
 
 	httpServer, err := server.NewHTTPServer(config)
@@ -110,7 +122,9 @@ func runServer(cmd *cobra.Command, args []string) error {
 	go func() {
 		<-sigChan
 		fmt.Println("\nShutting down server...")
-		httpServer.Shutdown(nil)
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		httpServer.Shutdown(ctx)
 	}()
 
 	// Start server

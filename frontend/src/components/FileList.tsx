@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { formatSize } from '../utils/format';
 import { getDownloadUrl, getZipUrl, deleteFile } from '../services/api';
+import { getBaseUrl } from '../utils/config';
 import type { FileInfo } from '../types';
 
 interface FileListProps {
@@ -87,30 +88,74 @@ export const FileList: React.FC<FileListProps> = ({
   };
 
   const handleShare = async (file: FileInfo) => {
-    try {
-      // Generate share URL
-      const baseUrl = window.location.origin;
-      let shareUrl: string;
-      
-      if (file.is_dir) {
-        // For directories, share the list URL
-        shareUrl = `${baseUrl}?path=${encodeURIComponent(file.path)}`;
-      } else {
-        // For files, share the download URL
-        shareUrl = `${baseUrl}${getDownloadUrl(file.path)}`;
-      }
+    // Generate share URL
+    const baseUrl = getBaseUrl();
+    let shareUrl: string;
+    
+    if (file.is_dir) {
+      // For directories, share the list URL
+      shareUrl = `${baseUrl}?path=${encodeURIComponent(file.path)}`;
+    } else {
+      // For files, share the download URL
+      shareUrl = `${baseUrl}${getDownloadUrl(file.path)}`;
+    }
 
-      // Copy to clipboard
-      await navigator.clipboard.writeText(shareUrl);
+    // Try modern Clipboard API first (works in secure contexts: HTTPS or localhost)
+    if (navigator.clipboard && window.isSecureContext) {
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        setCopiedPath(file.path);
+        setTimeout(() => {
+          setCopiedPath(null);
+        }, 2000);
+        return;
+      } catch (clipboardError) {
+        console.warn('Clipboard API failed, trying fallback:', clipboardError);
+        // Fall through to fallback method
+      }
+    }
+
+    // Fallback: Use traditional execCommand method (works in HTTP contexts)
+    try {
+      const textArea = document.createElement('textarea');
+      textArea.value = shareUrl;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      textArea.style.top = '-999999px';
+      textArea.style.opacity = '0';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textArea);
       
-      // Show success feedback
-      setCopiedPath(file.path);
-      setTimeout(() => {
-        setCopiedPath(null);
-      }, 2000);
+      if (successful) {
+        setCopiedPath(file.path);
+        setTimeout(() => {
+          setCopiedPath(null);
+        }, 2000);
+      } else {
+        throw new Error('execCommand failed');
+      }
     } catch (error) {
       console.error('Share error:', error);
-      onError('复制链接失败，请手动复制');
+      // Last resort: show prompt for manual copy
+      const userConfirmed = window.prompt(
+        '无法自动复制到剪贴板，请手动复制以下链接：',
+        shareUrl
+      );
+      
+      if (userConfirmed !== null) {
+        // User copied from prompt, show success feedback
+        setCopiedPath(file.path);
+        setTimeout(() => {
+          setCopiedPath(null);
+        }, 2000);
+      } else {
+        // User cancelled
+        onError('复制链接失败，请手动复制');
+      }
     }
   };
 

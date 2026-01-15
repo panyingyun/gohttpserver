@@ -33,9 +33,9 @@
 
 ### 一键安装[强烈推荐]
 ```bash
-docker stop gohttpserver
-docker rm gohttpserver
-docker run -itd --restart=always  -v /opt/gohttpserver:/data -p 8080:8080  -e AUTH=admin:password123 --name  gohttpserver harbor.michaelapp.com/gohttpserver/gohttpserver:v1.5 --upload --delete
+docker rm -f gohttpserver
+
+docker run -itd --restart=always  -v /opt/gohttpserver:/data -p 8080:8080  -e AUTH=admin:password123  -e BASE_URL=http://10.0.203.100:8080  --name  gohttpserver harbor.michaelapp.com/gohttpserver/gohttpserver:v1.8 --upload --delete
 ```
 
 ### 本地使用Docker构建安装 [推荐]
@@ -44,12 +44,11 @@ docker run -itd --restart=always  -v /opt/gohttpserver:/data -p 8080:8080  -e AU
 git clone <repository-url>
 cd gohttpserver
 # 构建镜像
-docker stop gohttpserver
-docker rm gohttpserver
+docker rm -f gohttpserver
 docker build -t gohttpserver:latest .
 
 # 运行容器（无认证，默认关闭上传和删除功能）
-docker run -itd  --name gohttpserver -p 8080:8080 -v $(pwd)/data:/data gohttpserver:latest --upload --delete
+docker run -itd  --name gohttpserver -p 8080:8080 -v $(pwd)/data:/data -e BASE_URL=http://10.0.203.100:8080 gohttpserver:latest --upload --delete
 
 # 运行容器（带认证，使用环境变量）
 docker run -itd --name gohttpserver -p 8080:8080 -v $(pwd)/data:/data -e AUTH=admin:password123 gohttpserver:latest
@@ -59,6 +58,12 @@ docker run -itd --name gohttpserver -p 8080:8080 -v $(pwd)/data:/data gohttpserv
 
 # 运行容器（带认证并启用上传和删除功能）
 docker run -itd --name gohttpserver -p 8080:8080 -v $(pwd)/data:/data -e AUTH=admin:password123 gohttpserver:latest --upload --delete
+
+# 运行容器（配置分享链接地址，推荐方式）
+docker run -itd --name gohttpserver -p 8080:8080 -v $(pwd)/data:/data -e BASE_URL=http://10.0.203.100:8080 gohttpserver:latest --upload --delete
+
+# 运行容器（使用命令行参数配置分享链接地址）
+docker run -itd --name gohttpserver -p 8080:8080 -v $(pwd)/data:/data gohttpserver:latest --base-url http://10.0.203.100:8080 --upload --delete
 
 ```
 
@@ -114,6 +119,12 @@ cd ../backend
 
 # 启用 WebDAV（默认启用）
 ./gohttpserver --webdav
+
+# 配置分享链接的基础地址（用于内网或域名访问）
+./gohttpserver --base-url http://10.0.203.100:8080
+
+# 使用环境变量配置基础地址
+BASE_URL=http://10.0.203.100:8080 ./gohttpserver
 ```
 
 ### 命令行参数
@@ -133,6 +144,7 @@ cd ../backend
 | `--upload` | | 启用文件上传功能 | `false` |
 | `--delete` | | 启用文件删除功能 | `false` |
 | `--web-dir` | | 前端文件目录 | |
+| `--base-url` | | 分享链接的基础地址（如：http://10.0.203.100:8080 或 https://example.com:8080）。也可通过 BASE_URL 环境变量设置。如果不设置，使用当前访问地址 | |
 
 ### 访问控制示例
 
@@ -230,6 +242,21 @@ Web 界面支持文件和文件夹的分享功能：
 - **视觉反馈**: 复制成功后，分享按钮图标会短暂变为 ✓，提示用户已成功复制
 - **使用场景**: 可以将分享链接发送给他人，方便协作和文件分发
 
+**配置分享链接地址**:
+- 使用 `--base-url` 参数或 `BASE_URL` 环境变量在运行时配置，无需重新构建镜像：
+  ```bash
+  # 使用命令行参数
+  ./gohttpserver --base-url http://10.0.203.100:8080
+  
+  # 使用环境变量
+  BASE_URL=http://10.0.203.100:8080 ./gohttpserver
+  
+  # Docker 中使用
+  docker run -e BASE_URL=http://10.0.203.100:8080 ... gohttpserver:latest
+  ```
+- 如果不指定，将使用当前访问的地址（`window.location.origin`）
+- 这对于内网部署或通过域名访问的场景特别有用，可以确保分享链接始终指向正确的地址
+
 ## WebDAV 使用
 
 启用 WebDAV 后，可以使用任何 WebDAV 客户端访问：
@@ -297,6 +324,7 @@ go run ./cmd/server --root ../data --port 8080 --web-dir ../frontend/dist
 ### 构建镜像
 
 ```bash
+# 构建镜像
 docker build -t gohttpserver:latest .
 ```
 
@@ -310,7 +338,26 @@ docker run -d \
   -v $(pwd)/data:/data \
   gohttpserver:latest
 
+# 配置分享链接地址（推荐：使用环境变量）
+docker run -d \
+  --name gohttpserver \
+  -p 8080:8080 \
+  -v $(pwd)/data:/data \
+  -e BASE_URL=http://10.0.203.100:8080 \
+  gohttpserver:latest
+
+# 配置分享链接地址（使用命令行参数）
+docker run -d \
+  --name gohttpserver \
+  -p 8080:8080 \
+  -v $(pwd)/data:/data \
+  gohttpserver:latest --base-url http://10.0.203.100:8080
 ```
+
+**注意**: 
+- 使用 `--base-url` 参数或 `BASE_URL` 环境变量在运行时配置分享链接地址，无需重新构建镜像
+- 如果不指定，将使用当前访问的地址（`window.location.origin`）
+- 建议在生产环境中指定，以确保分享链接的正确性
 
 ## 安全建议
 
