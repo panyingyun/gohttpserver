@@ -35,7 +35,7 @@
 ```bash
 docker rm -f gohttpserver
 
-docker run -itd --restart=always  -v /opt/gohttpserver:/data -p 8080:8080  -e AUTH=admin:password123  -e BASE_URL=http://10.0.203.100:8080  --name  gohttpserver harbor.michaelapp.com/gohttpserver/gohttpserver:v1.8 --upload --delete
+docker run -itd --restart=always  -v /opt/gohttpserver:/data -p 8080:8080  -e AUTH=admin:password123  -e BASE_URL=http://10.0.203.100:8080  --name  gohttpserver harbor.michaelapp.com/gohttpserver/gohttpserver:v1.9 --upload --delete
 ```
 
 ### 本地使用Docker构建安装 [推荐]
