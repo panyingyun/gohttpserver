@@ -1,0 +1,85 @@
+# Caddy 配置文件示例
+# 根据实际需求选择以下配置之一
+
+# ============================================
+# 配置 1: HTTPS 域名配置（推荐用于生产环境）
+# ============================================
+files.michaelapp.com {
+    # 请求体大小限制（10GB，可根据需要调整）
+    request_body {
+        max_size 10GB
+    }
+
+    # 反向代理到后端服务
+    reverse_proxy localhost:8080 {
+        transport http {
+            read_timeout 0      # 无读取超时（大文件下载）
+            write_timeout 0     # 无写入超时（大文件上传）
+            response_header_timeout 0
+        }
+        
+        health_uri /api/list?path=/
+        health_interval 30s
+        health_timeout 5s
+    }
+}
+
+# ============================================
+# 配置 2: HTTP 端口配置（用于内网或开发环境）
+# ============================================
+# :80 {
+#     request_body {
+#         max_size 10GB
+#     }
+#     
+#     reverse_proxy localhost:8080 {
+#         transport http {
+#             read_timeout 0
+#             write_timeout 0
+#             response_header_timeout 0
+#         }
+#     }
+# }
+
+# ============================================
+# 配置 3: 带认证的配置（如果需要 Caddy 层面的认证）
+# ============================================
+# files.michaelapp.com {
+#     # Basic Auth（可选，如果后端已经处理认证，可以省略）
+#     basicauth {
+#         yypan JDJhJDE0JEVCNmdaNEg2ei5QeGZTV1V3NHV1VGVWNEp4WFFiNkUyZk9qS3VqVHZ1b0FFWGpLSlJXUE1P
+#     }
+#     
+#     request_body {
+#         max_size 10GB
+#     }
+#     
+#     reverse_proxy localhost:8080 {
+#         transport http {
+#             read_timeout 0
+#             write_timeout 0
+#             response_header_timeout 0
+#         }
+#     }
+# }
+
+# ============================================
+# 配置 4: 多后端负载均衡（如果有多个实例）
+# ============================================
+# files.michaelapp.com {
+#     request_body {
+#         max_size 10GB
+#     }
+#     
+#     reverse_proxy localhost:8080 localhost:8081 localhost:8082 {
+#         transport http {
+#             read_timeout 0
+#             write_timeout 0
+#             response_header_timeout 0
+#         }
+#         
+#         lb_policy round_robin
+#         health_uri /api/list?path=/
+#         health_interval 30s
+#     }
+# }

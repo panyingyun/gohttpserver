@@ -359,9 +359,52 @@ docker run -d \
 - 如果不指定，将使用当前访问的地址（`window.location.origin`）
 - 建议在生产环境中指定，以确保分享链接的正确性
 
+## Caddy 反向代理配置
+
+如果使用 Caddy 作为反向代理（推荐用于生产环境），需要特别注意大文件上传和下载的配置。
+
+### 关键配置
+
+1. **请求体大小限制**: 必须设置足够大的 `max_size`（默认 100MB 可能不够）
+
+```caddy
+request_body {
+    max_size 10GB  # 根据实际需求调整
+}
+```
+
+2. **超时设置**: 大文件传输需要将超时设置为 0（无限制）
+
+```caddy
+reverse_proxy localhost:8080 {
+    transport http {
+        read_timeout 0      # 大文件下载
+        write_timeout 0     # 大文件上传
+        response_header_timeout 0
+    }
+}
+```
+
+### 完整配置示例
+
+项目根目录提供了 `Caddyfile` 配置文件，包含完整的配置示例。详细说明请参考 [docs/caddy-config.md](docs/caddy-config.md)。
+
+### 快速使用
+
+```bash
+# 1. 复制配置文件
+sudo cp Caddyfile /etc/caddy/Caddyfile
+
+# 2. 验证配置
+sudo caddy validate
+
+# 3. 重载配置
+sudo systemctl reload caddy
+```
+
 ## 安全建议
 
-1. **生产环境使用 HTTPS**: 始终使用 `--https` 选项并配置有效的 TLS 证书
+1. **生产环境使用 HTTPS**: 始终使用 `--https` 选项并配置有效的 TLS 证书，或使用 Caddy 等反向代理提供 HTTPS
 2. **启用认证**: 使用 `--auth` 选项或 `AUTH` 环境变量设置用户名和密码（格式: username:password）
 3. **路径访问控制**: 使用 `--allow-paths` 和 `--deny-paths` 限制访问范围
 4. **防火墙配置**: 仅开放必要的端口
