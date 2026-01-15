@@ -244,9 +244,16 @@ func (s *Server) HandleUpload(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handlePostUpload(w http.ResponseWriter, r *http.Request) {
-	// Parse multipart form
-	if err := r.ParseMultipartForm(100 << 20); err != nil { // 100MB max
-		http.Error(w, "Failed to parse form", http.StatusBadRequest)
+	// Check Content-Type
+	contentType := r.Header.Get("Content-Type")
+	if !strings.HasPrefix(contentType, "multipart/form-data") {
+		http.Error(w, fmt.Sprintf("Invalid Content-Type: %s. Expected multipart/form-data", contentType), http.StatusBadRequest)
+		return
+	}
+
+	// Parse multipart form (100MB max)
+	if err := r.ParseMultipartForm(100 << 20); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to parse multipart form: %v", err), http.StatusBadRequest)
 		return
 	}
 
@@ -257,7 +264,7 @@ func (s *Server) handlePostUpload(w http.ResponseWriter, r *http.Request) {
 
 	cleanPath, err := archive.SanitizePath(s.rootDir, uploadPath)
 	if err != nil {
-		http.Error(w, "Invalid path", http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf("Invalid path '%s': %v", uploadPath, err), http.StatusBadRequest)
 		return
 	}
 
@@ -268,32 +275,42 @@ func (s *Server) handlePostUpload(w http.ResponseWriter, r *http.Request) {
 
 	targetDir := filepath.Join(s.rootDir, cleanPath)
 	if err := os.MkdirAll(targetDir, 0755); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("Failed to create target directory: %v", err), http.StatusInternalServerError)
 		return
 	}
 
 	var uploadedFiles []string
+	var uploadErrors []string
 	files := r.MultipartForm.File["files"]
 	if len(files) == 0 {
 		// Try single file
 		file, header, err := r.FormFile("file")
-		if err == nil {
-			defer file.Close()
-			filename := filepath.Base(header.Filename)
-			targetPath := filepath.Join(targetDir, filename)
-
-			dst, err := os.Create(targetPath)
-			if err == nil {
-				if _, err := io.Copy(dst, file); err == nil {
-					uploadedFiles = append(uploadedFiles, filename)
-				}
-				dst.Close()
-			}
+		if err != nil {
+			http.Error(w, fmt.Sprintf("No files found in request. Error: %v", err), http.StatusBadRequest)
+			return
 		}
+		defer file.Close()
+		filename := filepath.Base(header.Filename)
+		targetPath := filepath.Join(targetDir, filename)
+
+		dst, err := os.Create(targetPath)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Failed to create file '%s': %v", filename, err), http.StatusInternalServerError)
+			return
+		}
+
+		if _, err := io.Copy(dst, file); err != nil {
+			dst.Close()
+			http.Error(w, fmt.Sprintf("Failed to write file '%s': %v", filename, err), http.StatusInternalServerError)
+			return
+		}
+		dst.Close()
+		uploadedFiles = append(uploadedFiles, filename)
 	} else {
 		for _, fileHeader := range files {
 			file, err := fileHeader.Open()
 			if err != nil {
+				uploadErrors = append(uploadErrors, fmt.Sprintf("Failed to open file '%s': %v", fileHeader.Filename, err))
 				continue
 			}
 
@@ -303,12 +320,14 @@ func (s *Server) handlePostUpload(w http.ResponseWriter, r *http.Request) {
 			dst, err := os.Create(targetPath)
 			if err != nil {
 				file.Close()
+				uploadErrors = append(uploadErrors, fmt.Sprintf("Failed to create file '%s': %v", filename, err))
 				continue
 			}
 
 			if _, err := io.Copy(dst, file); err != nil {
 				file.Close()
 				dst.Close()
+				uploadErrors = append(uploadErrors, fmt.Sprintf("Failed to write file '%s': %v", filename, err))
 				continue
 			}
 
@@ -316,14 +335,29 @@ func (s *Server) handlePostUpload(w http.ResponseWriter, r *http.Request) {
 			dst.Close()
 			uploadedFiles = append(uploadedFiles, filename)
 		}
+
+		// If no files were uploaded successfully, return error
+		if len(uploadedFiles) == 0 {
+			errorMsg := "No files were uploaded successfully"
+			if len(uploadErrors) > 0 {
+				errorMsg += ". Errors: " + strings.Join(uploadErrors, "; ")
+			}
+			http.Error(w, errorMsg, http.StatusBadRequest)
+			return
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	response := map[string]interface{}{
 		"success": true,
 		"files":   uploadedFiles,
 		"count":   len(uploadedFiles),
-	})
+	}
+	if len(uploadErrors) > 0 {
+		response["errors"] = uploadErrors
+		response["warning"] = fmt.Sprintf("%d file(s) uploaded successfully, but %d error(s) occurred", len(uploadedFiles), len(uploadErrors))
+	}
+	json.NewEncoder(w).Encode(response)
 }
 
 func (s *Server) handlePutUpload(w http.ResponseWriter, r *http.Request) {
