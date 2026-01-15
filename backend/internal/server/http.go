@@ -197,9 +197,9 @@ func NewHTTPServer(config *Config) (*HTTPServer, error) {
 	httpServer := &http.Server{
 		Addr:         fmt.Sprintf(":%d", port),
 		Handler:      handler,
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 15 * time.Second,
-		IdleTimeout:  60 * time.Second,
+		ReadTimeout:  30 * time.Second,  // Increased for large file uploads
+		WriteTimeout: 0,                 // 0 means no timeout - important for large file downloads
+		IdleTimeout:  120 * time.Second, // Increased for long connections
 	}
 
 	return &HTTPServer{

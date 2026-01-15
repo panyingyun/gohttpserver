@@ -178,8 +178,10 @@ func (s *Server) HandleDownload(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", contentType)
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", info.Name()))
 	w.Header().Set("Accept-Ranges", "bytes")
+	w.Header().Set("Connection", "keep-alive") // Keep connection alive for large downloads
 
 	// Support Range requests for resumable downloads
+	// http.ServeContent handles Range requests automatically and efficiently
 	http.ServeContent(w, r, info.Name(), info.ModTime(), file)
 }
 
