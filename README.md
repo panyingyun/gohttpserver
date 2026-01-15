@@ -35,7 +35,7 @@
 ```bash
 docker stop gohttpserver
 docker rm gohttpserver
-docker run -itd --restart=always  -v /opt/gohttpserver:/data -p 8080:8080  -e AUTH=admin:password123 --name  gohttpserver harbor.michaelapp.com/gohttpserver/gohttpserver:v1.5
+docker run -itd --restart=always  -v /opt/gohttpserver:/data -p 8080:8080  -e AUTH=admin:password123 --name  gohttpserver harbor.michaelapp.com/gohttpserver/gohttpserver:v1.5 --upload --delete
 ```
 
 ### 本地使用Docker构建安装 [推荐]
@@ -49,7 +49,7 @@ docker rm gohttpserver
 docker build -t gohttpserver:latest .
 
 # 运行容器（无认证，默认关闭上传和删除功能）
-docker run -itd  --name gohttpserver -p 8080:8080 -v $(pwd)/data:/data gohttpserver:latest
+docker run -itd  --name gohttpserver -p 8080:8080 -v $(pwd)/data:/data gohttpserver:latest --upload --delete
 
 # 运行容器（带认证，使用环境变量）
 docker run -itd --name gohttpserver -p 8080:8080 -v $(pwd)/data:/data -e AUTH=admin:password123 gohttpserver:latest
