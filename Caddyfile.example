@@ -5,23 +5,29 @@
 # 配置 1: HTTPS 域名配置（推荐用于生产环境）
 # ============================================
 files.michaelapp.com {
-    # 请求体大小限制（10GB，可根据需要调整）
-    request_body {
-        max_size 10GB
-    }
-
-    # 反向代理到后端服务
-    reverse_proxy localhost:8080 {
-        transport http {
-            read_timeout 0      # 无读取超时（大文件下载）
-            write_timeout 0     # 无写入超时（大文件上传）
-            response_header_timeout 0
+        log {
+                output file /opt/logs/files/access.log {
+                        roll_size 1gb
+                        roll_keep 5
+                        roll_keep_for 720h
+                }
         }
-        
-        health_uri /api/list?path=/
-        health_interval 30s
-        health_timeout 5s
-    }
+
+        # 请求体大小限制（10GB，可根据需要调整）
+        request_body {
+                max_size 10GB
+        }
+
+        # 反向代理到后端服务
+        reverse_proxy /* 127.0.0.1:4000 {
+                transport http {
+                        read_timeout 0
+                        write_timeout 0
+                        response_header_timeout 0
+                        dial_timeout 0
+                }
+        }
+        tls panyingyun@gmail.com
 }
 
 # ============================================
@@ -37,6 +43,7 @@ files.michaelapp.com {
 #             read_timeout 0
 #             write_timeout 0
 #             response_header_timeout 0
+#             dial_timeout 0
 #         }
 #     }
 # }
@@ -59,6 +66,7 @@ files.michaelapp.com {
 #             read_timeout 0
 #             write_timeout 0
 #             response_header_timeout 0
+#             dial_timeout 0
 #         }
 #     }
 # }
@@ -76,6 +84,8 @@ files.michaelapp.com {
 #             read_timeout 0
 #             write_timeout 0
 #             response_header_timeout 0
+#             dial_timeout 0
+#
 #         }
 #         
 #         lb_policy round_robin

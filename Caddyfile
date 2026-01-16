@@ -1,134 +1,27 @@
 # Caddy 配置文件 - 用于 gohttpserver 反向代理
 # 支持大文件上传和下载
-
 files.michaelapp.com {
-    # 请求体大小限制（默认 100MB，可根据需要调整）
-    # 对于大文件上传，建议设置为足够大的值，例如 10GB
-    request_body {
-        max_size 10GB
-    }
-
-    # 反向代理到后端服务
-    reverse_proxy localhost:8080 {
-        # 传输设置
-        transport http {
-            # 读取超时（从后端读取响应的超时时间）
-            # 对于大文件下载，设置为 0 表示无超时限制
-            read_timeout 0
-            
-            # 写入超时（向后端写入请求的超时时间）
-            # 对于大文件上传，设置为 0 表示无超时限制
-            write_timeout 0
-            
-            # 响应头超时
-            response_header_timeout 0
-            
-            # 最大空闲连接数
-            max_idle_conns 100
-            
-            # 每个主机的最大空闲连接数
-            max_idle_conns_per_host 10
-            
-            # 空闲连接超时
-            idle_conn_timeout 90s
-            
-            # TLS 握手超时
-            tls_handshake_timeout 10s
-            
-            # 期望继续超时（用于 100-continue）
-            expect_continue_timeout 1s
+        log {
+                output file /opt/logs/files/access.log {
+                        roll_size 1gb
+                        roll_keep 5
+                        roll_keep_for 720h
+                }
         }
-        
-        # 健康检查
-        health_uri /api/list?path=/
-        health_interval 30s
-        health_timeout 5s
-        
-        # 负载均衡（如果只有一个后端，可以省略）
-        # lb_policy round_robin
-        
-        # 保持连接
-        keepalive 32
-        keepalive_interval 30s
-        keepalive_idle_conns 100
-        keepalive_max_idle_conns 100
-    }
 
-    # 日志设置
-    log {
-        output file /var/log/caddy/access.log {
-            roll_size 100MB
-            roll_keep 10
+        # 请求体大小限制（10GB，可根据需要调整）
+        request_body {
+                max_size 10GB
         }
-        format json
-    }
 
-    # 错误日志
-    log {
-        output file /var/log/caddy/error.log {
-            roll_size 100MB
-            roll_keep 10
+        # 反向代理到后端服务
+        reverse_proxy /* 127.0.0.1:4000 {
+                transport http {
+                        read_timeout 0
+                        write_timeout 0
+                        response_header_timeout 0
+                        dial_timeout 0
+                }
         }
-        level ERROR
-    }
-
-    # 压缩（可选，对于大文件可能不需要）
-    # encode gzip zstd
-
-    # 安全头（可选）
-    header {
-        # 移除服务器标识
-        -Server
-        
-        # CORS 头（如果需要）
-        Access-Control-Allow-Origin *
-        Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
-        Access-Control-Allow-Headers "Content-Type, Authorization"
-    }
-
-    # 文件上传相关的特殊处理
-    @upload {
-        path /api/upload*
-    }
-    
-    # 文件下载相关的特殊处理
-    @download {
-        path /api/download*
-    }
-    
-    # 为上传和下载路由设置更长的超时
-    handle @upload {
-        reverse_proxy localhost:8080 {
-            transport http {
-                read_timeout 0
-                write_timeout 0
-                response_header_timeout 0
-            }
-        }
-    }
-    
-    handle @download {
-        reverse_proxy localhost:8080 {
-            transport http {
-                read_timeout 0
-                write_timeout 0
-                response_header_timeout 0
-            }
-        }
-    }
+        tls panyingyun@gmail.com
 }
-
-# 如果使用 HTTP（非 HTTPS），可以使用以下配置
-# :80 {
-#     request_body {
-#         max_size 10GB
-#     }
-#     
-#     reverse_proxy localhost:8080 {
-#         transport http {
-#             read_timeout 0
-#             write_timeout 0
-#             response_header_timeout 0
-#         }
-#     }
-# }
