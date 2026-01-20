@@ -60,17 +60,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="p-6">
         <div className="flex items-center gap-3 mb-8">
           <div className="size-10 rounded-lg flex items-center justify-center overflow-hidden">
-            <img 
-              src="/ghs.png" 
-              alt="Logo" 
+            <img
+              src="/ghs.png"
+              alt="Logo"
               className="w-full h-full object-contain"
             />
           </div>
           <div className="flex flex-col">
             <h1 className="text-[#111318] dark:text-white text-base font-bold leading-tight">
-              StaticFile Pro
+              GHS Pro
             </h1>
-            <p className="text-[#616f89] text-xs font-normal">Standard Account</p>
           </div>
         </div>
 
@@ -90,11 +89,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       <div className="mt-auto p-6">
         <div
-          className={`border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center text-center bg-background-light/50 dark:bg-white/5 transition-all ${
-            isDragging
-              ? 'border-primary bg-primary/5'
-              : 'border-[#d1d5db] dark:border-[#4a5568]'
-          }`}
+          className={`border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center text-center bg-background-light/50 dark:bg-white/5 transition-all ${isDragging
+            ? 'border-primary bg-primary/5'
+            : 'border-[#d1d5db] dark:border-[#4a5568]'
+            }`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
