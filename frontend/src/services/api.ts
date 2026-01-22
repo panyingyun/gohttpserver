@@ -41,7 +41,64 @@ export async function searchFiles(
   return handleResponse<SearchResponse>(response);
 }
 
-// Upload files
+// Upload files with progress callback
+export function uploadFilesWithProgress(
+  files: File[],
+  path: string = '/',
+  onProgress?: (fileIndex: number, progress: number, loaded: number, total: number) => void
+): Promise<UploadResponse[]> {
+  return Promise.all(
+    files.map((file, index) => {
+      return new Promise<UploadResponse>((resolve, reject) => {
+        const formData = new FormData();
+        formData.append('path', path);
+        formData.append('files', file);
+
+        const xhr = new XMLHttpRequest();
+
+        // Track upload progress
+        xhr.upload.addEventListener('progress', (e) => {
+          if (e.lengthComputable && onProgress) {
+            const progress = Math.round((e.loaded / e.total) * 100);
+            onProgress(index, progress, e.loaded, e.total);
+          }
+        });
+
+        xhr.addEventListener('load', () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              const response = JSON.parse(xhr.responseText) as UploadResponse;
+              resolve(response);
+            } catch (error) {
+              reject(new Error('Failed to parse response'));
+            }
+          } else {
+            if (xhr.status === 401) {
+              reject(new Error('需要认证，请使用支持 Basic Auth 的客户端'));
+            } else if (xhr.status === 403) {
+              reject(new Error('访问被拒绝'));
+            } else {
+              reject(new Error(`HTTP ${xhr.status}: ${xhr.statusText}`));
+            }
+          }
+        });
+
+        xhr.addEventListener('error', () => {
+          reject(new Error('Network error'));
+        });
+
+        xhr.addEventListener('abort', () => {
+          reject(new Error('Upload aborted'));
+        });
+
+        xhr.open('POST', `${API_BASE}/upload`);
+        xhr.send(formData);
+      });
+    })
+  );
+}
+
+// Upload files (backward compatible, without progress)
 export async function uploadFiles(
   files: File[],
   path: string = '/'

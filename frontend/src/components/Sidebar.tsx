@@ -1,9 +1,8 @@
 import React, { useState, useRef } from 'react';
-import { uploadFiles } from '../services/api';
 
 interface SidebarProps {
   currentPath: string;
-  onUploadSuccess: (files?: File[]) => void;
+  onUploadSuccess: (files: File[]) => void;
   onError: (error: string) => void;
 }
 
@@ -46,8 +45,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   };
 
   const handleUpload = async (files: File[]) => {
+    if (files.length === 0) return;
     try {
-      await uploadFiles(files, currentPath);
       onUploadSuccess(files);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : '上传失败';

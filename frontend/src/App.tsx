@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { listFiles, uploadFiles } from './services/api';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { listFiles, uploadFilesWithProgress } from './services/api';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { FileList } from './components/FileList';
@@ -73,38 +73,139 @@ const App: React.FC = () => {
     loadFiles();
   }, [loadFiles]);
 
-  const handleUploadSuccess = useCallback((uploadedFiles?: File[]) => {
-    loadFiles();
-    // Add upload transfer with actual file information
-    if (uploadedFiles && uploadedFiles.length > 0) {
-      const totalSize = uploadedFiles.reduce((sum, file) => sum + file.size, 0);
-      const newTransfer: Transfer = {
-        id: Date.now().toString(),
-        name: uploadedFiles.length === 1 ? uploadedFiles[0].name : `${uploadedFiles.length} files`,
-        type: 'upload',
-        status: 'completed',
-        progress: 100,
-        size: formatSize(totalSize),
-      };
-      setTransfers((prev) => [...prev, newTransfer]);
-    } else {
-      // Fallback for drag & drop or other upload methods
-    const newTransfer: Transfer = {
-      id: Date.now().toString(),
-      name: 'Uploaded files',
-      type: 'upload',
-      status: 'completed',
-      progress: 100,
-      size: '0 KB',
-    };
-    setTransfers((prev) => [...prev, newTransfer]);
-    }
-  }, [loadFiles]);
-
   const handleError = useCallback((errorMessage: string) => {
     setError(errorMessage);
     setTimeout(() => setError(null), 5000);
   }, []);
+
+  // Track upload progress for each file
+  const uploadProgressRef = useRef<Map<string, { loaded: number; total: number; lastTime: number; lastLoaded: number }>>(new Map());
+
+  const handleUploadProgress = useCallback((fileId: string, file: File, progress: number, loaded: number, total: number) => {
+    const now = Date.now();
+    const progressData = uploadProgressRef.current.get(fileId);
+    
+    let speed = '0 MB/s';
+    let timeLeft: string | undefined;
+
+    if (progressData) {
+      const timeDiff = (now - progressData.lastTime) / 1000; // seconds
+      const loadedDiff = loaded - progressData.lastLoaded;
+      
+      if (timeDiff > 0) {
+        const bytesPerSecond = loadedDiff / timeDiff;
+        const mbPerSecond = bytesPerSecond / (1024 * 1024);
+        speed = `${mbPerSecond.toFixed(2)} MB/s`;
+        
+        if (bytesPerSecond > 0) {
+          const remaining = total - loaded;
+          const secondsLeft = remaining / bytesPerSecond;
+          if (secondsLeft < 60) {
+            timeLeft = `${Math.round(secondsLeft)}s`;
+          } else if (secondsLeft < 3600) {
+            timeLeft = `${Math.round(secondsLeft / 60)}m`;
+          } else {
+            timeLeft = `${Math.round(secondsLeft / 3600)}h`;
+          }
+        }
+      }
+    }
+
+    uploadProgressRef.current.set(fileId, {
+      loaded,
+      total,
+      lastTime: now,
+      lastLoaded: loaded,
+    });
+
+    setTransfers((prev) =>
+      prev.map((t) =>
+        t.id === fileId
+          ? {
+              ...t,
+              progress,
+              speed,
+              timeLeft,
+              size: formatSize(total),
+            }
+          : t
+      )
+    );
+  }, []);
+
+  const handleUploadFiles = useCallback(async (files: File[]) => {
+    if (files.length === 0) return;
+
+    // Create transfer tasks for each file
+    const newTransfers: Transfer[] = files.map((file, index) => {
+      const fileId = `upload-${Date.now()}-${index}`;
+      return {
+        id: fileId,
+        name: file.name,
+        type: 'upload',
+        status: 'active',
+        progress: 0,
+        size: formatSize(file.size),
+      };
+    });
+
+    setTransfers((prev) => [...prev, ...newTransfers]);
+
+    try {
+      await uploadFilesWithProgress(
+        files,
+        currentPath,
+        (fileIndex, progress, loaded, total) => {
+          const fileId = newTransfers[fileIndex].id;
+          handleUploadProgress(fileId, files[fileIndex], progress, loaded, total);
+        }
+      );
+
+      // Mark all transfers as completed
+      setTransfers((prev) =>
+        prev.map((t) => {
+          const isNewTransfer = newTransfers.some((nt) => nt.id === t.id);
+          return isNewTransfer
+            ? { ...t, status: 'completed' as const, progress: 100 }
+            : t;
+        })
+      );
+
+      // Clean up progress tracking
+      newTransfers.forEach((t) => {
+        uploadProgressRef.current.delete(t.id);
+      });
+
+      loadFiles();
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : '上传失败';
+      
+      // Mark failed transfers
+      setTransfers((prev) =>
+        prev.map((t) => {
+          const isNewTransfer = newTransfers.some((nt) => nt.id === t.id);
+          return isNewTransfer
+            ? { ...t, status: 'error' as const }
+            : t;
+        })
+      );
+
+      // Clean up progress tracking
+      newTransfers.forEach((t) => {
+        uploadProgressRef.current.delete(t.id);
+      });
+
+      handleError(errorMessage);
+    }
+  }, [currentPath, loadFiles, handleUploadProgress, handleError]);
+
+  const handleUploadSuccess = useCallback((uploadedFiles?: File[]) => {
+    // This callback is kept for backward compatibility
+    // The actual upload is now handled by handleUploadFiles
+    if (uploadedFiles) {
+      handleUploadFiles(uploadedFiles);
+    }
+  }, [handleUploadFiles]);
 
   const handlePause = (id: string) => {
     setTransfers((prev) =>
@@ -130,7 +231,7 @@ const App: React.FC = () => {
     <div className="flex h-screen overflow-hidden bg-background-light dark:bg-background-dark font-display text-[#111318] dark:text-white">
       <Sidebar
         currentPath={currentPath}
-        onUploadSuccess={handleUploadSuccess}
+        onUploadSuccess={handleUploadFiles}
         onError={handleError}
       />
 
@@ -191,13 +292,7 @@ const App: React.FC = () => {
             input.onchange = async (e) => {
               const files = Array.from((e.target as HTMLInputElement).files || []);
               if (files.length > 0) {
-                try {
-                  await uploadFiles(files, currentPath);
-                  handleUploadSuccess(files);
-                } catch (error) {
-                  const errorMessage = error instanceof Error ? error.message : '上传失败';
-                  handleError(errorMessage);
-                }
+                await handleUploadFiles(files);
               }
             };
             input.click();
