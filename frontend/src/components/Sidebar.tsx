@@ -7,7 +7,7 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
-  currentPath,
+  currentPath: _currentPath,
   onUploadSuccess,
   onError,
 }) => {

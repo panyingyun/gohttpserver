@@ -81,7 +81,7 @@ const App: React.FC = () => {
   // Track upload progress for each file
   const uploadProgressRef = useRef<Map<string, { loaded: number; total: number; lastTime: number; lastLoaded: number }>>(new Map());
 
-  const handleUploadProgress = useCallback((fileId: string, file: File, progress: number, loaded: number, total: number) => {
+  const handleUploadProgress = useCallback((fileId: string, _file: File, progress: number, loaded: number, total: number) => {
     const now = Date.now();
     const progressData = uploadProgressRef.current.get(fileId);
     
@@ -199,13 +199,6 @@ const App: React.FC = () => {
     }
   }, [currentPath, loadFiles, handleUploadProgress, handleError]);
 
-  const handleUploadSuccess = useCallback((uploadedFiles?: File[]) => {
-    // This callback is kept for backward compatibility
-    // The actual upload is now handled by handleUploadFiles
-    if (uploadedFiles) {
-      handleUploadFiles(uploadedFiles);
-    }
-  }, [handleUploadFiles]);
 
   const handlePause = (id: string) => {
     setTransfers((prev) =>
