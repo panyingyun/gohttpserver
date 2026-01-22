@@ -151,51 +151,66 @@ const App: React.FC = () => {
 
     setTransfers((prev) => [...prev, ...newTransfers]);
 
-    try {
-      await uploadFilesWithProgress(
-        files,
-        currentPath,
-        (fileIndex, progress, loaded, total) => {
-          const fileId = newTransfers[fileIndex].id;
-          handleUploadProgress(fileId, files[fileIndex], progress, loaded, total);
+    // Upload files individually to handle errors per file
+    const uploadPromises = files.map(async (file, index) => {
+      const fileId = newTransfers[index].id;
+      try {
+        await uploadFilesWithProgress(
+          [file],
+          currentPath,
+          (fileIndex, progress, loaded, total) => {
+            if (fileIndex === 0) {
+              handleUploadProgress(fileId, file, progress, loaded, total);
+            }
+          }
+        );
+
+        // Mark as completed
+        setTransfers((prev) =>
+          prev.map((t) =>
+            t.id === fileId
+              ? { ...t, status: 'completed' as const, progress: 100 }
+              : t
+          )
+        );
+
+        // Clean up progress tracking
+        uploadProgressRef.current.delete(fileId);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : '上传失败';
+        
+        // Mark as error with specific error message
+        setTransfers((prev) =>
+          prev.map((t) =>
+            t.id === fileId
+              ? { ...t, status: 'error' as const }
+              : t
+          )
+        );
+
+        // Clean up progress tracking
+        uploadProgressRef.current.delete(fileId);
+
+        // Only show error notification for timeout errors
+        if (errorMessage.includes('Timeout') || errorMessage.includes('timeout')) {
+          handleError(`文件 "${file.name}" 上传超时，请重试`);
         }
-      );
+      }
+    });
 
-      // Mark all transfers as completed
-      setTransfers((prev) =>
-        prev.map((t) => {
-          const isNewTransfer = newTransfers.some((nt) => nt.id === t.id);
-          return isNewTransfer
-            ? { ...t, status: 'completed' as const, progress: 100 }
-            : t;
-        })
-      );
-
-      // Clean up progress tracking
-      newTransfers.forEach((t) => {
-        uploadProgressRef.current.delete(t.id);
-      });
-
-      loadFiles();
+    try {
+      await Promise.all(uploadPromises);
+      // Refresh file list after uploads complete
+      // Use setTimeout to ensure state updates are processed first
+      setTimeout(() => {
+        loadFiles();
+      }, 500);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : '上传失败';
-      
-      // Mark failed transfers
-      setTransfers((prev) =>
-        prev.map((t) => {
-          const isNewTransfer = newTransfers.some((nt) => nt.id === t.id);
-          return isNewTransfer
-            ? { ...t, status: 'error' as const }
-            : t;
-        })
-      );
-
-      // Clean up progress tracking
-      newTransfers.forEach((t) => {
-        uploadProgressRef.current.delete(t.id);
-      });
-
-      handleError(errorMessage);
+      // Individual errors are already handled above
+      // Still refresh in case some files succeeded
+      setTimeout(() => {
+        loadFiles();
+      }, 500);
     }
   }, [currentPath, loadFiles, handleUploadProgress, handleError]);
 

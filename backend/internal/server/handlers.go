@@ -251,8 +251,9 @@ func (s *Server) handlePostUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse multipart form (100MB max)
-	if err := r.ParseMultipartForm(100 << 20); err != nil {
+	// Parse multipart form (10GB max for large file uploads)
+	// Use a large value to support big files, but still have some limit to prevent abuse
+	if err := r.ParseMultipartForm(10 << 30); err != nil {
 		http.Error(w, fmt.Sprintf("Failed to parse multipart form: %v", err), http.StatusBadRequest)
 		return
 	}

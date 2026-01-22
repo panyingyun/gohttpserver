@@ -171,6 +171,12 @@ export const TransferCenter: React.FC<TransferCenterProps> = ({
                 </p>
               )}
 
+              {transfer.status === 'error' && (
+                <p className="text-[10px] text-amber-500 dark:text-amber-400 mt-1.5 dark:mt-2">
+                  Interrupted at {transfer.progress}% (Server Timeout)
+                </p>
+              )}
+
               {transfer.status === 'completed' && (
                 <div className="flex items-center justify-between mt-1.5 dark:mt-2">
                   <p className="text-[10px] text-emerald-500 dark:text-emerald-400 font-bold">

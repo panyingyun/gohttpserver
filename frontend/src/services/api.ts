@@ -77,6 +77,8 @@ export function uploadFilesWithProgress(
               reject(new Error('需要认证，请使用支持 Basic Auth 的客户端'));
             } else if (xhr.status === 403) {
               reject(new Error('访问被拒绝'));
+            } else if (xhr.status === 408 || xhr.status === 504) {
+              reject(new Error('Server Timeout'));
             } else {
               reject(new Error(`HTTP ${xhr.status}: ${xhr.statusText}`));
             }
@@ -84,14 +86,25 @@ export function uploadFilesWithProgress(
         });
 
         xhr.addEventListener('error', () => {
-          reject(new Error('Network error'));
+          // Check if it's a timeout by examining readyState
+          if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 0) {
+            reject(new Error('Server Timeout'));
+          } else {
+            reject(new Error('Network error'));
+          }
         });
 
         xhr.addEventListener('abort', () => {
           reject(new Error('Upload aborted'));
         });
 
+        xhr.addEventListener('timeout', () => {
+          reject(new Error('Server Timeout'));
+        });
+
         xhr.open('POST', `${API_BASE}/upload`);
+        // Set timeout to 30 minutes (1800000ms) for large file uploads
+        xhr.timeout = 30 * 60 * 1000;
         xhr.send(formData);
       });
     })
