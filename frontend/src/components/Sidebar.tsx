@@ -58,7 +58,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <aside className="w-72 bg-white dark:bg-[#1a2130] border-r border-[#f0f2f4] dark:border-[#2d3748] flex flex-col h-full shrink-0">
       <div className="p-6">
         <div className="flex items-center gap-3 mb-8">
-          <div className="size-10 rounded-lg flex items-center justify-center overflow-hidden">
+          <div className="size-10 rounded-full flex items-center justify-center overflow-hidden">
             <img
               src="/ghs.png"
               alt="Logo"
