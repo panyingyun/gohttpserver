@@ -61,36 +61,53 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="h-16 flex items-center justify-between px-8 bg-white dark:bg-[#1a2130] border-b border-[#f0f2f4] dark:border-[#2d3748] shrink-0">
-      <div className="flex items-center gap-2">
-        <a
-          className="text-[#616f89] text-sm font-medium hover:text-primary"
-          href="#"
-          onClick={(e) => {
-            e.preventDefault();
-            onNavigate('/');
-          }}
-        >
-          Root
-        </a>
-        {pathParts.map((part, index) => {
-          segments.push(part);
-          const segmentPath = segments.join('/');
-          return (
-            <React.Fragment key={index}>
-              <span className="text-[#616f89] text-sm">/</span>
-              <a
-                className="text-[#616f89] text-sm font-medium hover:text-primary"
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  onNavigate(segmentPath);
-                }}
-              >
-                {part}
-              </a>
-            </React.Fragment>
-          );
-        })}
+      <div className="flex items-center gap-6">
+        {/* Logo and Product Name */}
+        <div className="flex items-center gap-3">
+          <div className="size-10 rounded-full flex items-center justify-center overflow-hidden">
+            <img
+              src="/ghs.png"
+              alt="Logo"
+              className="w-full h-full object-contain"
+            />
+          </div>
+          <h1 className="text-[#111318] dark:text-white text-base font-bold leading-tight">
+            GHS Pro
+          </h1>
+        </div>
+
+        {/* Path Navigation */}
+        <div className="flex items-center gap-2">
+          <a
+            className="text-[#616f89] text-sm font-medium hover:text-primary"
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              onNavigate('/');
+            }}
+          >
+            Root
+          </a>
+          {pathParts.map((part, index) => {
+            segments.push(part);
+            const segmentPath = segments.join('/');
+            return (
+              <React.Fragment key={index}>
+                <span className="text-[#616f89] text-sm">/</span>
+                <a
+                  className="text-[#616f89] text-sm font-medium hover:text-primary"
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    onNavigate(segmentPath);
+                  }}
+                >
+                  {part}
+                </a>
+              </React.Fragment>
+            );
+          })}
+        </div>
       </div>
 
       <div className="flex items-center gap-4">

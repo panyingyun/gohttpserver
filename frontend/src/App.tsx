@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { listFiles, uploadFilesWithProgress } from './services/api';
-import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { FileList } from './components/FileList';
 import { TransferCenter } from './components/TransferCenter';
@@ -238,12 +237,6 @@ const App: React.FC = () => {
 
   return (
     <div className="flex h-screen overflow-hidden bg-background-light dark:bg-background-dark font-display text-[#111318] dark:text-white">
-      <Sidebar
-        currentPath={currentPath}
-        onUploadSuccess={handleUploadFiles}
-        onError={handleError}
-      />
-
       <main className="flex-1 flex flex-col h-full bg-background-light dark:bg-background-dark relative overflow-hidden">
         <Header
           path={currentPath}
