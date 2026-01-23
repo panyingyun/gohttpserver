@@ -72,6 +72,9 @@ export const FileList: React.FC<FileListProps> = ({
   onError,
 }) => {
   const [copiedPath, setCopiedPath] = useState<string | null>(null);
+  
+  // Ensure files is always an array
+  const fileList = Array.isArray(files) ? files : [];
 
   const handleDelete = async (path: string, name: string) => {
     if (!confirm(`确定要删除 "${name}" 吗？`)) {
@@ -159,13 +162,16 @@ export const FileList: React.FC<FileListProps> = ({
     }
   };
 
-  if (files.length === 0) {
+  if (fileList.length === 0) {
     return (
       <div className="bg-white dark:bg-[#1a2130] rounded-xl border border-[#f0f2f4] dark:border-[#2d3748] p-8 text-center">
-        <span className="material-symbols-outlined text-4xl text-[#616f89] mb-2">
+        <span className="material-symbols-outlined text-4xl text-[#616f89] dark:text-text-muted mb-2">
           folder_open
         </span>
         <p className="text-[#616f89] dark:text-text-muted">目录为空</p>
+        <p className="text-sm text-[#616f89] dark:text-text-muted mt-2 opacity-75">
+          拖拽文件到左侧区域上传，或点击右上角按钮选择文件
+        </p>
       </div>
     );
   }
@@ -188,7 +194,7 @@ export const FileList: React.FC<FileListProps> = ({
 
       {/* Table Body */}
       <div className="divide-y divide-[#f0f2f4] dark:divide-dark-border">
-        {files.map((file) => (
+        {fileList.map((file) => (
           <div
             key={file.path}
             className="grid grid-cols-12 gap-4 px-6 py-4 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors items-center list-row cursor-pointer"

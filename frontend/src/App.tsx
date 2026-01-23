@@ -31,7 +31,8 @@ const App: React.FC = () => {
 
     try {
       const response = await listFiles(path);
-      setFiles(response.files);
+      // Ensure files is always an array
+      setFiles(Array.isArray(response.files) ? response.files : []);
       setCurrentPath(response.path);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '加载失败';
