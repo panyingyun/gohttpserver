@@ -60,7 +60,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="flex items-center gap-3 mb-8">
           <div className="size-10 rounded-full flex items-center justify-center overflow-hidden">
             <img
-              src="/ghs.png"
+              src="/logo.png"
               alt="Logo"
               className="w-full h-full object-contain"
             />
