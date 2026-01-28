@@ -6,6 +6,31 @@ import { TransferCenter } from './components/TransferCenter';
 import { formatSize } from './utils/format';
 import type { FileInfo, SearchResult } from './types';
 
+const STORAGE_KEY_PATH = 'ghs-current-path';
+
+function normalizePath(p: string): string {
+  const path = p.trim() || '/';
+  return path.startsWith('/') ? path : `/${path}`;
+}
+
+function savePathToStorage(path: string) {
+  try {
+    localStorage.setItem(STORAGE_KEY_PATH, path);
+  } catch {
+    // ignore localStorage errors
+  }
+}
+
+function updatePathInUrl(path: string) {
+  const url = new URL(window.location.href);
+  if (path === '/' || path === '') {
+    url.searchParams.delete('path');
+  } else {
+    url.searchParams.set('path', path);
+  }
+  window.history.replaceState({ path }, '', url.toString());
+}
+
 interface Transfer {
   id: string;
   name: string;
@@ -25,14 +50,18 @@ const App: React.FC = () => {
   const [transfers, setTransfers] = useState<Transfer[]>([]);
 
   const loadFiles = useCallback(async (path: string = currentPath) => {
+    const normalizedPath = normalizePath(path);
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await listFiles(path);
+      const response = await listFiles(normalizedPath);
       // Ensure files is always an array
       setFiles(Array.isArray(response.files) ? response.files : []);
-      setCurrentPath(response.path);
+      const resolvedPath = response.path || normalizedPath;
+      setCurrentPath(resolvedPath);
+      savePathToStorage(resolvedPath);
+      updatePathInUrl(resolvedPath);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '加载失败';
       setError(errorMessage);
@@ -43,14 +72,24 @@ const App: React.FC = () => {
   }, [currentPath]);
 
   useEffect(() => {
-    // Check if there's a path parameter in the URL
     const urlParams = new URLSearchParams(window.location.search);
     const pathParam = urlParams.get('path');
-    if (pathParam) {
-      loadFiles(pathParam);
-    } else {
-    loadFiles();
+    const savedPath = (() => {
+      try {
+        return localStorage.getItem(STORAGE_KEY_PATH);
+      } catch {
+        return null;
+      }
+    })();
+
+    const initialPath = pathParam
+      ? normalizePath(pathParam)
+      : (savedPath ? normalizePath(savedPath) : '/');
+
+    if (savedPath && !pathParam) {
+      updatePathInUrl(initialPath);
     }
+    loadFiles(initialPath);
   }, []);
 
   const handleNavigate = useCallback((path: string) => {
