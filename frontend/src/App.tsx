@@ -13,6 +13,20 @@ function normalizePath(p: string): string {
   return path.startsWith('/') ? path : `/${path}`;
 }
 
+function getInitialPath(): string {
+  if (typeof window === 'undefined') return '/';
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    const pathParam = urlParams.get('path');
+    if (pathParam != null && pathParam !== '') return normalizePath(pathParam);
+    const saved = localStorage.getItem(STORAGE_KEY_PATH);
+    if (saved != null && saved !== '') return normalizePath(saved);
+  } catch {
+    // ignore
+  }
+  return '/';
+}
+
 function savePathToStorage(path: string) {
   try {
     localStorage.setItem(STORAGE_KEY_PATH, path);
@@ -43,7 +57,7 @@ interface Transfer {
 }
 
 const App: React.FC = () => {
-  const [currentPath, setCurrentPath] = useState('/');
+  const [currentPath, setCurrentPath] = useState(getInitialPath);
   const [files, setFiles] = useState<FileInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -72,23 +86,8 @@ const App: React.FC = () => {
   }, [currentPath]);
 
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const pathParam = urlParams.get('path');
-    const savedPath = (() => {
-      try {
-        return localStorage.getItem(STORAGE_KEY_PATH);
-      } catch {
-        return null;
-      }
-    })();
-
-    const initialPath = pathParam
-      ? normalizePath(pathParam)
-      : (savedPath ? normalizePath(savedPath) : '/');
-
-    if (savedPath && !pathParam) {
-      updatePathInUrl(initialPath);
-    }
+    const initialPath = getInitialPath();
+    updatePathInUrl(initialPath);
     loadFiles(initialPath);
   }, []);
 
