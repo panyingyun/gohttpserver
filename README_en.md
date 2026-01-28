@@ -1,5 +1,7 @@
 # GHS Pro
 
+<img src="docs/GHS.png" width="20%" height="20%">
+
 A feature-rich static file server written in Go, with a React+TypeScript frontend, supporting file upload/download, directory compression, search, resumable downloads, access control, and HTTPS/WebDAV support.
 
 ## Features
