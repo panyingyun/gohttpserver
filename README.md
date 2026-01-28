@@ -1,5 +1,7 @@
 # GHS Pro
 
+<img src="docs/GHS.png" width="20%" height="20%">
+
 一个功能完整的 Go 语言静态文件服务器，使用 React+TypeScript 前端，支持文件上传下载、目录压缩、搜索、断点续传、访问控制和 HTTPS/WebDAV 支持。
 
 ## 功能特性
