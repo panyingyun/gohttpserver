@@ -37,7 +37,7 @@ A feature-rich static file server written in Go, with a React+TypeScript fronten
 ```bash
 docker rm -f gohttpserver
 
-docker run -itd --restart=always -v /opt/gohttpserver:/data -p 8080:8080 -e AUTH=admin:password123 -e BASE_URL=http://[Your IP]:8080 --name gohttpserver harbor.michaelapp.com/gohttpserver/gohttpserver:v2.6 --upload --delete
+docker run -itd --restart=always -v /opt/gohttpserver:/data -p 8080:8080 -e AUTH=admin:password123 -e BASE_URL=http://[Your IP]:8080 --name gohttpserver harbor.michaelapp.com/gohttpserver/gohttpserver:v2.7 --upload --delete
 ```
 
 ### Local Docker Build Installation [Recommended]

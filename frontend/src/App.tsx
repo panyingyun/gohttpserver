@@ -273,6 +273,102 @@ const App: React.FC = () => {
     setTransfers((prev) => prev.filter((t) => t.status !== 'completed'));
   };
 
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [showUploadMenu, setShowUploadMenu] = useState(false);
+  const menuContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuContainerRef.current && !menuContainerRef.current.contains(e.target as Node)) {
+        setShowUploadMenu(false);
+      }
+    };
+    if (showUploadMenu) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [showUploadMenu]);
+
+  const handleUploadFolder = useCallback(async (fileList: FileList | null) => {
+    if (!fileList || fileList.length === 0) return;
+    const files = Array.from(fileList);
+    const basePath = currentPath.replace(/\/$/, '') || '';
+
+    const newTransfers: Transfer[] = files.map((file, index) => {
+      const fileId = `upload-${Date.now()}-${index}`;
+      return {
+        id: fileId,
+        name: (file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name,
+        type: 'upload',
+        status: 'active',
+        progress: 0,
+        size: formatSize(file.size),
+      };
+    });
+    setTransfers((prev) => [...prev, ...newTransfers]);
+
+    const uploadPromises = files.map(async (file, index) => {
+      const fileId = newTransfers[index].id;
+      const relativePath = (file as File & { webkitRelativePath?: string }).webkitRelativePath || '';
+      const relativeDir = relativePath.includes('/') ? relativePath.replace(/\/[^/]+$/, '') : '';
+      const targetPath = relativeDir ? `${basePath}/${relativeDir}` : basePath || '/';
+
+      try {
+        await uploadFilesWithProgress(
+          [file],
+          targetPath,
+          (fileIndex, progress, loaded, total) => {
+            if (fileIndex === 0) handleUploadProgress(fileId, file, progress, loaded, total);
+          }
+        );
+        setTransfers((prev) =>
+          prev.map((t) => (t.id === fileId ? { ...t, status: 'completed' as const, progress: 100 } : t))
+        );
+        uploadProgressRef.current.delete(fileId);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : '上传失败';
+        setTransfers((prev) =>
+          prev.map((t) => (t.id === fileId ? { ...t, status: 'error' as const } : t))
+        );
+        uploadProgressRef.current.delete(fileId);
+        if (String(errorMessage).includes('Timeout') || String(errorMessage).includes('timeout')) {
+          handleError(`文件 "${file.name}" 上传超时，请重试`);
+        }
+      }
+    });
+
+    try {
+      await Promise.all(uploadPromises);
+      setTimeout(() => loadFiles(), 500);
+    } catch {
+      setTimeout(() => loadFiles(), 500);
+    }
+  }, [currentPath, loadFiles, handleUploadProgress, handleError]);
+
+  const openFilePicker = () => {
+    setShowUploadMenu(false);
+    fileInputRef.current?.click();
+  };
+  const openFolderPicker = () => {
+    setShowUploadMenu(false);
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.style.display = 'none';
+    input.setAttribute('webkitdirectory', '');
+    input.setAttribute('directory', '');
+    input.setAttribute('multiple', '');
+    input.onchange = async (e: Event) => {
+      const list = (e.target as HTMLInputElement).files;
+      if (list && list.length > 0) {
+        await handleUploadFolder(list);
+      }
+      input.remove();
+    };
+    input.oncancel = () => input.remove();
+    document.body.appendChild(input);
+    input.click();
+  };
+
   return (
     <div className="flex h-screen overflow-hidden bg-background-light dark:bg-background-dark font-display text-[#111318] dark:text-white">
       <main className="flex-1 flex flex-col h-full bg-background-light dark:bg-background-dark relative overflow-hidden">
@@ -323,24 +419,49 @@ const App: React.FC = () => {
           )}
         </div>
 
-        <button
-          className="absolute bottom-8 right-8 size-14 bg-primary text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-10 shadow-primary/30"
-          onClick={async () => {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.multiple = true;
-            input.onchange = async (e) => {
-              const files = Array.from((e.target as HTMLInputElement).files || []);
-              if (files.length > 0) {
-                await handleUploadFiles(files);
-              }
-            };
-            input.click();
+        <div ref={menuContainerRef} className="absolute bottom-8 right-8 z-10 flex flex-col items-end gap-2">
+          {showUploadMenu && (
+            <div className="flex flex-col rounded-xl border border-[#f0f2f4] dark:border-[#2d3748] bg-white dark:bg-[#1a2130] shadow-2xl overflow-hidden min-w-[160px]">
+              <button
+                type="button"
+                className="flex items-center gap-3 px-4 py-3 text-left text-sm font-medium text-[#111318] dark:text-white hover:bg-gray-50 dark:hover:bg-white/10 transition-colors"
+                onClick={openFilePicker}
+              >
+                <span className="material-symbols-outlined text-xl text-primary">upload_file</span>
+                上传文件
+              </button>
+              <button
+                type="button"
+                className="flex items-center gap-3 px-4 py-3 text-left text-sm font-medium text-[#111318] dark:text-white hover:bg-gray-50 dark:hover:bg-white/10 transition-colors border-t border-[#f0f2f4] dark:border-[#2d3748]"
+                onClick={openFolderPicker}
+              >
+                <span className="material-symbols-outlined text-xl text-primary">folder</span>
+                上传文件夹
+              </button>
+            </div>
+          )}
+          <button
+            type="button"
+            className="size-14 bg-primary text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-primary/30"
+            onClick={() => setShowUploadMenu((v) => !v)}
+            title={showUploadMenu ? '关闭' : '上传'}
+          >
+            <span className="material-symbols-outlined text-3xl font-bold">add</span>
+          </button>
+        </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          className="hidden"
+          onChange={async (e) => {
+            const list = e.target.files;
+            if (list && list.length > 0) {
+              await handleUploadFiles(Array.from(list));
+            }
+            e.target.value = '';
           }}
-          title="Upload files"
-        >
-          <span className="material-symbols-outlined text-3xl font-bold">add</span>
-        </button>
+        />
       </main>
 
       <TransferCenter

@@ -11,7 +11,7 @@ COPY frontend/tsconfig.json frontend/tsconfig.node.json frontend/vite.config.ts 
 COPY frontend/tailwind.config.js frontend/postcss.config.js ./
 
 # Install dependencies
-RUN npm install -g npm@11.7.0 && npm ci
+RUN npm install -g npm@11.8.0 && npm ci
 
 # Copy source files
 COPY frontend/index.html ./
