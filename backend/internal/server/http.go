@@ -73,15 +73,18 @@ func NewHTTPServer(config *Config) (*HTTPServer, error) {
 	// Setup routes
 	mux := http.NewServeMux()
 
-	// Create auth middleware
+	// Create auth middleware (for list, search, upload, delete)
 	authMW := AuthMiddleware(basicAuth, pathACL)
+	// Path-only middleware for download/zip: no auth required, only path ACL
+	pathOnlyMW := PathACLOnlyMiddleware(pathACL)
 
 	// Regular HTTP handlers - API routes must be registered before static file handler
 	mux.HandleFunc("/api/list", authMW(http.HandlerFunc(srv.HandleListFiles)).ServeHTTP)
 	mux.HandleFunc("/api/files", authMW(http.HandlerFunc(srv.HandleListFiles)).ServeHTTP) // Alias
 	mux.HandleFunc("/api/search", authMW(http.HandlerFunc(srv.HandleSearch)).ServeHTTP)
-	mux.HandleFunc("/api/download/", authMW(http.HandlerFunc(srv.HandleDownload)).ServeHTTP)
-	mux.HandleFunc("/api/zip/", authMW(http.HandlerFunc(srv.HandleZip)).ServeHTTP)
+	// Download and zip: no auth required (path ACL still applied)
+	mux.HandleFunc("/api/download/", pathOnlyMW(http.HandlerFunc(srv.HandleDownload)).ServeHTTP)
+	mux.HandleFunc("/api/zip/", pathOnlyMW(http.HandlerFunc(srv.HandleZip)).ServeHTTP)
 	
 	// Upload handlers - only register if upload is enabled
 	if config.EnableUpload {

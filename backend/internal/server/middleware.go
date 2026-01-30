@@ -47,3 +47,18 @@ func AuthMiddleware(basicAuth *BasicAuth, pathACL *PathACL) func(http.Handler) h
 		})
 	}
 }
+
+// PathACLOnlyMiddleware wraps handlers with path ACL only (no auth required).
+// Used for download and zip so file download is not subject to auth.
+func PathACLOnlyMiddleware(pathACL *PathACL) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			path := r.URL.Path
+			if !pathACL.IsAllowed(path) {
+				http.Error(w, "Access denied", http.StatusForbidden)
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
+}
