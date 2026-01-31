@@ -1,4 +1,4 @@
-# GHS Pro
+# GFS Pro
 
 <img src="docs/GHS.png" width="20%" height="20%">
 
